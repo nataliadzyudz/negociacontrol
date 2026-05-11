@@ -4,6 +4,11 @@ import { validateLeadInput, detectEsTest } from '../validators/lead.js';
 
 const router = Router();
 
+function generateLeadCode() {
+  const stamp = Date.now().toString().slice(-8);
+  return `NC-L-${stamp}`;
+}
+
 router.get('/leads', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -38,7 +43,8 @@ router.get('/leads/:id', async (req, res) => {
         *,
         lead_triage (*),
         lead_status_history (*),
-        lead_notes (*)
+        lead_notes (*),
+        lead_interactions (*)
       `)
       .eq('id', id)
       .single();
@@ -51,6 +57,74 @@ router.get('/leads/:id', async (req, res) => {
     res.json({ success: true, data: lead });
   } catch (err) {
     console.error('Error fetching lead:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/leads', async (req, res) => {
+  try {
+    const payload = req.body || {};
+
+    if (!payload.nombre || payload.nombre.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'El nombre es obligatorio'
+      });
+    }
+
+    const validation = validateLeadInput({
+      ...payload,
+      lead_code: payload.lead_code || 'AUTO'
+    });
+
+    if (!validation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validación fallida',
+        details: validation.errors
+      });
+    }
+
+    const leadData = {
+      lead_code: payload.lead_code || generateLeadCode(),
+      nombre: payload.nombre,
+      email: payload.email || null,
+      whatsapp: payload.whatsapp || null,
+      idioma_preferido: payload.idioma_preferido || null,
+      duda_principal: payload.duda_principal || null,
+      explicacion_caso: payload.explicacion_caso || null,
+      urgencia: payload.urgencia || null,
+      consentimiento_valido: payload.consentimiento_valido === true,
+      email_valido: payload.email_valido === true,
+      whatsapp_valido: payload.whatsapp_valido === true,
+      es_test: payload.es_test !== false,
+      canal_entrada: payload.canal_entrada || 'dashboard_v0',
+      raw_payload: payload
+    };
+
+    const { data: lead, error: leadError } = await supabase
+      .from('leads')
+      .insert([leadData])
+      .select()
+      .single();
+
+    if (leadError) throw leadError;
+
+    const { error: statusError } = await supabase
+      .from('lead_status_history')
+      .insert([{
+        lead_id: lead.id,
+        estado_anterior: null,
+        estado_nuevo: 'NUEVO',
+        motivo: 'Lead creado desde dashboard V0',
+        changed_by: 'dashboard_v0'
+      }]);
+
+    if (statusError) throw statusError;
+
+    res.status(201).json({ success: true, data: lead });
+  } catch (err) {
+    console.error('Error creating dashboard lead:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -439,6 +513,29 @@ router.post('/leads/:id/interactions', async (req, res) => {
     });
   } catch (err) {
     console.error('Error creating interaction:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/leads/:id/interactions', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('lead_interactions')
+      .select('*')
+      .eq('lead_id', id)
+      .order('fecha', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      data: data || [],
+      count: data?.length || 0
+    });
+  } catch (err) {
+    console.error('Error fetching interactions:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

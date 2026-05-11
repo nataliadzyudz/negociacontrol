@@ -151,11 +151,16 @@
                                 <select id="drawer-status-select" class="status-select-premium"
                                     aria-label="Cambiar estado del lead">
                                     <option value="NUEVO">Nuevo lead</option>
-                                    <option value="EN_REVISION">En revisión</option>
-                                    <option value="CONTACTADO">Contactado</option>
+                                    <option value="PENDIENTE_REVISION">Pendiente revisión</option>
+                                    <option value="FALTA_DATO">Falta dato</option>
+                                    <option value="APTO_DIAGNOSTICO">Apto diagnóstico</option>
                                     <option value="DIAGNOSTICO_PROPUESTO">Diagnóstico propuesto</option>
-                                    <option value="CLIENTE">Clientes</option>
-                                    <option value="DESCARTADO">Rechazados</option>
+                                    <option value="DIAGNOSTICO_RESERVADO">Diagnóstico reservado</option>
+                                    <option value="CLIENTE_ACTIVO">Cliente activo</option>
+                                    <option value="NO_ENCAJA">No encaja</option>
+                                    <option value="NO_CONTESTA">No contesta</option>
+                                    <option value="ERROR_IA">Error IA</option>
+                                    <option value="ARCHIVADO">Archivado</option>
                                 </select>
                             </div>
                         </div>
@@ -188,6 +193,35 @@
                         <button class="btn-action-outline" id="btn-copy-mail">Enviar Email</button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div id="new-lead-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="new-lead-title">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="new-lead-title">Nuevo lead V0</h3>
+                    <button id="btn-close-new-lead" class="btn-close-drawer" aria-label="Cerrar">&times;</button>
+                </div>
+                <form id="new-lead-form" class="modal-form">
+                    <label>Nombre<input name="nombre" required value="Lead Test Natalia"></label>
+                    <label>Email<input name="email" type="email" required value="test@example.com"></label>
+                    <label>WhatsApp<input name="whatsapp" required value="34600000000"></label>
+                    <label>Idioma
+                        <select name="idioma_preferido">
+                            <option>Español</option>
+                            <option>Inglés</option>
+                            <option>Ucraniano</option>
+                        </select>
+                    </label>
+                    <label>Duda principal<input name="duda_principal" required value="Diagnóstico fiscal"></label>
+                    <label>Explicación caso<textarea name="explicacion_caso" required>Lead creado desde dashboard V0</textarea></label>
+                    <label>Urgencia<input name="urgencia" value="Solo explorando"></label>
+                    <div class="modal-actions">
+                        <button type="button" id="btn-cancel-new-lead" class="btn-action-outline">Cancelar</button>
+                        <button type="submit" class="btn-primary-compact">Guardar lead</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

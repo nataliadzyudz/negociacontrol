@@ -90,6 +90,24 @@ const ApiClient = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     return json.data;
+  },
+
+  async getInteractions(leadId) {
+    const res = await fetch(`${API_BASE}/leads/${leadId}/interactions`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    return json.data || [];
+  },
+
+  async createLead(payload) {
+    const res = await fetch(`${API_BASE}/leads`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    return json.data;
   }
 };
 
@@ -98,8 +116,10 @@ let API_AVAILABLE = false;
 
 // --- ADAPTADOR DE DATOS (Backend → Frontend) ---
 function adaptLeadFromBackend(lead) {
-  const triage = lead.lead_triage || {};
-  const statusHistory = lead.lead_status_history?.[0] || {};
+  const triageRows = Array.isArray(lead.lead_triage) ? lead.lead_triage : (lead.lead_triage ? [lead.lead_triage] : []);
+  const triage = triageRows.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0] || {};
+  const statusRows = Array.isArray(lead.lead_status_history) ? lead.lead_status_history : (lead.lead_status_history ? [lead.lead_status_history] : []);
+  const statusHistory = statusRows.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0] || {};
   
   return {
     Lead_ID: lead.lead_code,
@@ -131,20 +151,25 @@ function adaptLeadFromBackend(lead) {
     Estado: statusHistory.estado_nuevo || 'NUEVO',
     Es_test: lead.es_test ? 'SÍ' : 'NO',
     Canal_origen: lead.canal_entrada,
-    lead_triage: triage,
-    lead_status_history: lead.lead_status_history,
-    lead_notes: lead.lead_notes
+    lead_triage: triageRows,
+    lead_status_history: statusRows,
+    lead_notes: lead.lead_notes || []
   };
 }
 
 // --- CONFIGURACIÓN ---
 const COLUMNS = [
   { id: 'NUEVO', label: 'Nuevo lead' },
-  { id: 'EN_REVISION', label: 'En revisión' },
-  { id: 'CONTACTADO', label: 'Contactado' },
+  { id: 'PENDIENTE_REVISION', label: 'Pendiente revisión' },
+  { id: 'FALTA_DATO', label: 'Falta dato' },
+  { id: 'APTO_DIAGNOSTICO', label: 'Apto diagnóstico' },
   { id: 'DIAGNOSTICO_PROPUESTO', label: 'Diagnóstico propuesto' },
-  { id: 'CLIENTE', label: 'Clientes' },
-  { id: 'RECHAZADO', label: 'Rechazados' }
+  { id: 'DIAGNOSTICO_RESERVADO', label: 'Diagnóstico reservado' },
+  { id: 'CLIENTE_ACTIVO', label: 'Cliente activo' },
+  { id: 'NO_ENCAJA', label: 'No encaja' },
+  { id: 'NO_CONTESTA', label: 'No contesta' },
+  { id: 'ERROR_IA', label: 'Error IA' },
+  { id: 'ARCHIVADO', label: 'Archivado' }
 ];
 
 // --- ESTADO DE LA APP ---
@@ -265,8 +290,14 @@ function createLeadCard(lead) {
 }
 
 // --- DRAWER LOGIC ---
-function openDrawer(lead) {
+async function openDrawer(lead) {
   const drawer = document.getElementById('lead-drawer');
+  try {
+    const detailed = await ApiClient.getLead(lead.Lead_ID_original);
+    lead = adaptLeadFromBackend(detailed);
+  } catch (error) {
+    console.warn('No se pudo cargar detalle completo del lead:', error.message);
+  }
   
   // Helper para campos vacíos
   const getVal = (val, placeholder = "Pendiente") => {
@@ -410,10 +441,93 @@ function openDrawer(lead) {
         <span class="data-label">Comentarios / Notas NC</span>
         <textarea style="width:100%; height:80px; padding:10px; border-radius:8px; border:1px solid var(--border-color); font-size:12px;" placeholder="Natalia, añade tus notas aquí...">${lead.Comentario_revision || ""}</textarea>
       </div>
+      <div class="data-item" style="margin-top:12px;">
+        <span class="data-label">Notas registradas</span>
+        <div>${(lead.lead_notes || []).length ? (lead.lead_notes || []).map(n => `<p style="margin:4px 0;">- ${n.note}</p>`).join('') : '<span class="text-muted">Sin notas registradas.</span>'}</div>
+      </div>
+    </section>
+
+    <section class="drawer-section">
+      <h4 class="section-title">5. Registrar interacción manual</h4>
+      <form id="interaction-form" class="interaction-form">
+        <select name="canal" required>
+          <option value="WHATSAPP_MANUAL">WHATSAPP_MANUAL</option>
+          <option value="EMAIL_MANUAL">EMAIL_MANUAL</option>
+          <option value="LLAMADA">LLAMADA</option>
+          <option value="NOTA_INTERNA">NOTA_INTERNA</option>
+          <option value="OTRO">OTRO</option>
+        </select>
+        <select name="tipo_interaccion" required>
+          <option value="MENSAJE_ENVIADO_MANUAL">MENSAJE_ENVIADO_MANUAL</option>
+          <option value="RESPUESTA_RECIBIDA">RESPUESTA_RECIBIDA</option>
+          <option value="LLAMADA_REALIZADA">LLAMADA_REALIZADA</option>
+          <option value="SEGUIMIENTO">SEGUIMIENTO</option>
+          <option value="CIERRE">CIERRE</option>
+        </select>
+        <textarea name="resumen" required placeholder="Resumen de interacción"></textarea>
+        <input name="responsable" placeholder="Responsable" value="Natalia">
+        <button type="submit" class="btn-primary-compact">Guardar interacción</button>
+      </form>
+      <div id="interaction-list" class="interaction-list"></div>
     </section>
   `;
 
+  bindInteractionForm(lead);
+  loadInteractions(lead);
+
   drawer.classList.remove('hidden');
+}
+
+function renderInteractions(items) {
+  const list = document.getElementById('interaction-list');
+  if (!list) return;
+  if (!items.length) {
+    list.innerHTML = '<p class="text-muted">Sin interacciones registradas.</p>';
+    return;
+  }
+
+  list.innerHTML = items.map(item => `
+    <div class="interaction-item">
+      <div><strong>${item.canal}</strong> · ${item.tipo_interaccion}</div>
+      <div>${item.resumen}</div>
+      <small>${item.responsable || 'api'} · ${new Date(item.fecha || item.created_at).toLocaleString()}</small>
+    </div>
+  `).join('');
+}
+
+async function loadInteractions(lead) {
+  try {
+    const items = await ApiClient.getInteractions(lead.Lead_ID_original);
+    renderInteractions(items);
+  } catch (error) {
+    console.error('Error loading interactions:', error);
+    renderInteractions([]);
+  }
+}
+
+function bindInteractionForm(lead) {
+  const form = document.getElementById('interaction-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    try {
+      await ApiClient.addInteraction(
+        lead.Lead_ID_original,
+        data.get('canal'),
+        data.get('tipo_interaccion'),
+        data.get('resumen'),
+        data.get('responsable')
+      );
+      alert('Interacción registrada');
+      form.reset();
+      await loadInteractions(lead);
+      await refreshData();
+    } catch (error) {
+      alert(`Error registrando interacción: ${error.message}`);
+    }
+  });
 }
 
 function closeDrawer() {
@@ -478,8 +592,10 @@ function setupEventListeners() {
         filters.semaforo = 'all';
         card.classList.add('active-filter');
         // Reset dropdowns visual state
-        document.getElementById('filter-estado').value = 'all';
-        document.getElementById('filter-semaforo').value = 'all';
+        const filterEstado = document.getElementById('filter-estado');
+        const filterSemaforo = document.getElementById('filter-semaforo');
+        if (filterEstado) filterEstado.value = 'all';
+        if (filterSemaforo) filterSemaforo.value = 'all';
         document.getElementById('filter-urgencia').value = 'all';
       } else if (filter === 'urgente') {
         if (filters.urgencia === 'Esta semana') {
@@ -541,18 +657,60 @@ function setupEventListeners() {
   document.getElementById('drawer-status-select').addEventListener('change', async (e) => {
     if (currentLead) {
       const newEstado = e.target.value;
-      // FASE 2A: Dashboard es READ-ONLY
-      // No se permite escribir datos en laboratorio
-      console.log('⚠️ READ-ONLY: Cambio de estado no permitido en Fase 2A');
-      console.log('Lead:', currentLead.lead_code || currentLead.Lead_ID, 'Nuevo estado:', newEstado);
-      
-      // Restaurar valor original (no se permite cambio)
-      const select = e.target;
-      const estadoActual = currentLead.lead_status_history?.[0]?.estado_nuevo || currentLead.Estado || 'NUEVO';
-      select.value = estadoActual;
-      
-      // Mostrar indicador visual de solo lectura
-      alert('📖 Modo solo lectura (Fase 2A)\n\nEl cambio de estado estará disponible en Fase 2C.');
+
+      const estadoActual = currentLead.Estado || 'NUEVO';
+      if (newEstado === estadoActual) return;
+
+      try {
+        await ApiClient.updateStatus(currentLead.Lead_ID_original, newEstado, 'Cambio manual dashboard V0');
+        alert('Estado actualizado correctamente');
+        await refreshData();
+        const updated = LEADS.find(l => l.Lead_ID_original === currentLead.Lead_ID_original);
+        if (updated) {
+          openDrawer(updated);
+        }
+      } catch (error) {
+        e.target.value = estadoActual;
+        alert(`Error actualizando estado: ${error.message}`);
+      }
+    }
+  });
+
+  const btnAddLead = document.getElementById('btn-add-lead');
+  const modal = document.getElementById('new-lead-modal');
+  const closeModal = () => modal.classList.add('hidden');
+
+  btnAddLead.addEventListener('click', () => modal.classList.remove('hidden'));
+  document.getElementById('btn-close-new-lead').addEventListener('click', closeModal);
+  document.querySelector('#new-lead-modal .modal-overlay').addEventListener('click', closeModal);
+  document.getElementById('btn-cancel-new-lead').addEventListener('click', closeModal);
+
+  document.getElementById('new-lead-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const payload = {
+      nombre: fd.get('nombre'),
+      email: fd.get('email'),
+      whatsapp: fd.get('whatsapp'),
+      idioma_preferido: fd.get('idioma_preferido'),
+      duda_principal: fd.get('duda_principal'),
+      explicacion_caso: fd.get('explicacion_caso'),
+      urgencia: fd.get('urgencia'),
+      consentimiento_valido: true,
+      email_valido: true,
+      whatsapp_valido: true,
+      es_test: true,
+      canal_entrada: 'dashboard_v0'
+    };
+
+    try {
+      await ApiClient.createLead(payload);
+      alert('Lead creado correctamente');
+      closeModal();
+      e.target.reset();
+      await refreshData();
+    } catch (error) {
+      alert(`Error creando lead: ${error.message}`);
     }
   });
 }
