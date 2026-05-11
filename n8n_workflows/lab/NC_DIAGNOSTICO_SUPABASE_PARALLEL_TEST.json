@@ -1,0 +1,855 @@
+{
+  "name": "DIAGNOSTICO_SUPABASE_PARALLEL_TEST",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ba45c6a8-a03c-4149-a0da-ec64be1751c6",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3a9cc67c-fb65-4645-bb24-00bed44bdf5c",
+      "name": "Webhook",
+      "webhookId": "ba45c6a8-a03c-4149-a0da-ec64be1751c6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = items[0].json;\nconst payload = input.body ?? input;\nconst data = payload.data ?? payload;\nconst START_FROM = 1;\nconst STATIC_KEY = 'NC_DIAGNOSTICO_LEADS';\nfunction normalize(text) { return String(text || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, ''); }\nfunction normalizeSearch(text) { return String(text || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase(); }\nfunction extractFields(input, payload, data) {\n  if (Array.isArray(data.fields)) return data.fields;\n  if (Array.isArray(payload.fields)) return payload.fields;\n  if (Array.isArray(input.fields)) return input.fields;\n  const containers = [data, payload, input];\n  for (const container of containers) {\n    if (!container || typeof container !== 'object') continue;\n    const found = Object.values(container).filter(v => v && typeof v === 'object' && (v.label || v.title || v.key || v.name) && Object.prototype.hasOwnProperty.call(v, 'value'));\n    if (found.length > 0) return found;\n  }\n  return [];\n}\nfunction collectOptions(obj, depth = 0, acc = []) {\n  if (!obj || typeof obj !== 'object' || depth > 6) return acc;\n  if (Array.isArray(obj)) {\n    for (const item of obj) {\n      if (item && typeof item === 'object') {\n        const id = item.id ?? item.key ?? item.value;\n        const text = item.text ?? item.label ?? item.title ?? item.name;\n        if (id !== undefined && text !== undefined) acc.push({ id: String(id), text: String(text) });\n      }\n      collectOptions(item, depth + 1, acc);\n    }\n    return acc;\n  }\n  for (const key of Object.keys(obj)) collectOptions(obj[key], depth + 1, acc);\n  return acc;\n}\nfunction resolveFieldValue(field) {\n  let value = field.value;\n  const options = collectOptions(field);\n  const optionMap = {};\n  for (const option of options) optionMap[String(option.id)] = String(option.text);\n  function resolveOne(v) {\n    if (v === null || v === undefined) return '';\n    if (typeof v === 'object') {\n      const directText = v.text ?? v.label ?? v.title ?? v.name;\n      if (directText !== undefined) return String(directText);\n      const id = v.id ?? v.key ?? v.value;\n      if (id !== undefined && optionMap[String(id)]) return optionMap[String(id)];\n      return JSON.stringify(v);\n    }\n    const raw = String(v);\n    return optionMap[raw] ?? raw;\n  }\n  if (Array.isArray(value)) return value.map(resolveOne).join(', ');\n  return resolveOne(value);\n}\nfunction getContext(text, needle) {\n  const source = String(text || '');\n  const lower = normalizeSearch(source);\n  const normalizedNeedle = normalizeSearch(needle);\n  const idx = lower.indexOf(normalizedNeedle);\n  if (idx < 0) return source.slice(0, 160);\n  const start = Math.max(0, idx - 45);\n  const end = Math.min(source.length, idx + needle.length + 45);\n  return source.slice(start, end).trim();\n}\nconst fields = extractFields(input, payload, data);\nconst byLabel = {};\nconst byNorm = {};\nfor (const field of fields) {\n  const label = (field.label || field.title || field.key || field.name || '').trim();\n  const value = resolveFieldValue(field);\n  byLabel[label] = value;\n  byNorm[normalize(label)] = value;\n}\nfunction pick(...possibleLabels) {\n  for (const label of possibleLabels) {\n    const value = byNorm[normalize(label)];\n    if (value !== undefined && value !== null && String(value).trim() !== '') return value;\n  }\n  return '';\n}\nconst responseId = data.responseId || data.respondentId || data.submissionId || payload.responseId || payload.respondentId || payload.submissionId || input.responseId || input.respondentId || input.submissionId || data.id || '';\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData[STATIC_KEY] || typeof staticData[STATIC_KEY] !== 'object') staticData[STATIC_KEY] = { nextLeadNumber: START_FROM, leadIdByResponseId: {} };\nconst store = staticData[STATIC_KEY];\nif (!store.leadIdByResponseId || typeof store.leadIdByResponseId !== 'object') store.leadIdByResponseId = {};\nif (store.nextLeadNumber === undefined || store.nextLeadNumber === null || Number.isNaN(Number(store.nextLeadNumber))) store.nextLeadNumber = START_FROM;\nfunction makeLeadId(number) { return 'L-' + String(number).padStart(4, '0'); }\nlet leadId;\nif (responseId && store.leadIdByResponseId[responseId]) { leadId = store.leadIdByResponseId[responseId]; } else { leadId = makeLeadId(Number(store.nextLeadNumber)); if (responseId) store.leadIdByResponseId[responseId] = leadId; store.nextLeadNumber = Number(store.nextLeadNumber) + 1; }\nconst lead = {\n  Lead_ID: leadId,\n  Fecha: data.createdAt || payload.createdAt || input.createdAt || new Date().toISOString(),\n  Nombre_y_apellidos: pick('Nombre', 'Nombre y apellidos', 'Nombre_y_apellidos', 'Nombre completo'),\n  Email: pick('Email', 'Correo electr?nico', 'Correo electronico'),\n  WhatsApp: pick('WhatsApp', 'Whatsapp', 'Tel?fono', 'Telefono', 'M?vil', 'Movil'),\n  Idioma: pick('Idioma preferido', 'Idioma'),\n  En_Espana: pick('?Est?s ya en Espa?a?', 'Est?s ya en Espa?a', 'Estas ya en Espa?a', 'Estas ya en Espana', '?Estas ya en Espana?', 'En_Espana', 'En Espa?a', 'En Espana'),\n  Situacion_actual: pick('Situaci?n actual', 'Situacion actual', 'Situacion_actual', '?Cu?l es tu situaci?n actual?', 'Cual es tu situacion actual'),\n  Origen_ingresos: pick('Origen de ingresos', 'Origen ingresos', 'Origen_ingresos', 'Origen de tus ingresos', '?De d?nde vienen tus ingresos?', 'De donde vienen tus ingresos', 'Fuente de ingresos', 'Ingresos'),\n  Duda_principal: pick('Tu duda principal hoy', 'Duda principal', 'Duda_principal'),\n  Resumen_caso: pick('Expl?came tu situaci?n en 5?7 l?neas', 'Explicame tu situacion en 5-7 lineas', 'Expl?came tu situaci?n', 'Explicame tu situacion', 'Expl?came tu caso en 5?7 l?neas', 'Explicame tu caso en 5-7 lineas', 'Expl?came tu caso', 'Explicame tu caso', 'Cu?ntame tu caso', 'Cuentame tu caso', 'Describe tu situaci?n', 'Describe tu situacion', 'Resumen caso', 'Resumen_caso'),\n  Urgencia: pick('Urgencia'),\n  Consentimiento: pick('Consentimiento')\n};\n// VALIDACION_CONSENTIMIENTO\nconst consentimientoNorm = normalizeSearch(lead.Consentimiento).trim();\nconst consentimientoCompact = normalize(lead.Consentimiento);\nconst Consentimiento_valido = Boolean(consentimientoNorm) && (consentimientoCompact.includes('heleidoyacepto') || consentimientoCompact.includes('acepto') || consentimientoCompact.includes('aceptado') || consentimientoCompact === 'si');\n// VALIDACION_CONTACTO\nconst emailTrim = String(lead.Email || '').trim();\nconst Email_valido = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/.test(emailTrim);\nconst whatsappDigits = String(lead.WhatsApp || '').replace(/[^0-9]/g, '');\nconst WhatsApp_valido = whatsappDigits.length >= 8 && whatsappDigits.length <= 15;\nconst contactoValido = Email_valido || WhatsApp_valido;\n// DETECCION_TEST\nconst emailLower = normalizeSearch(lead.Email);\nconst testDomains = ['example.com', 'test.com', 'prueba.com', 'gmail.test'];\nconst nombreEsTest = /\\[test\\]|\\btest\\b|\\bverde\\b|\\bamarillo\\b|\\brojo\\b/i.test(String(lead.Nombre_y_apellidos || ''));\nconst emailEsTest = /\\[test\\]|test/i.test(String(lead.Email || '')) || testDomains.some(domain => emailLower.includes(domain));\nconst Es_test = (nombreEsTest || emailEsTest) ? 'SI' : 'NO';\n// REGLAS_DURAS_RIESGO\nconst relevantParts = [lead.Nombre_y_apellidos, lead.Email, lead.WhatsApp, lead.Idioma, lead.En_Espana, lead.Situacion_actual, lead.Origen_ingresos, lead.Duda_principal, lead.Resumen_caso, lead.Urgencia, lead.Consentimiento];\nconst textoRiesgo = relevantParts.filter(Boolean).join(' | ');\nconst textoNorm = normalizeSearch(textoRiesgo);\nconst riskTerms = ['multa', 'deuda', 'inspecci?n', 'inspeccion', 'sanci?n', 'sancion', 'denuncia', 'requerimiento', 'embargo', 'Hacienda me reclama', 'Agencia Tributaria me reclama', 'sin contrato', 'papeles caducados', 'situaci?n irregular', 'situacion irregular', 'fraude', 'ocultar ingresos', 'no declarar', 'dinero en negro', 'negro', 'evitar impuestos', 'urgente por problema con Hacienda', 'tax notice', 'tax requirement', 'tax debt', 'tax inspection', 'tax audit', 'fine', 'penalty', 'sanction', 'undeclared income', 'cash without invoice', 'work without contract', 'irregular situation', 'avoid taxes', 'Hacienda claim', 'tax authority claim', '?????', '????', '?????????? ????', '?????????', '????????? ?????????', '?????????', '???????', '??????', '??? ?????????', '??????????? ?????????', '?????????? ????????', '?? ???????????', '????????? ??????', '??????? ??? ???????', '???????? ? ??????????'];\nconst migratoryTerms = ['papeles caducados', 'situaci?n irregular', 'situacion irregular', 'irregular situation', '??????????? ?????????', '?????????? ????????'];\nconst documentalTerms = ['sin contrato', 'work without contract', '??? ?????????'];\nlet riesgoEncontrado = '';\nfor (const term of riskTerms) { if (textoNorm.includes(normalizeSearch(term))) { riesgoEncontrado = term; break; } }\nlet Riesgo_duro_detectado = 'NO';\nlet Riesgo_duro_motivo = '';\nlet Tipo_riesgo_preIA = 'Sin riesgo relevante';\nlet Tipo_lead_preIA = '';\nif (riesgoEncontrado) {\n  Riesgo_duro_detectado = 'SI';\n  Riesgo_duro_motivo = riesgoEncontrado + ': ' + getContext(textoRiesgo, riesgoEncontrado);\n  const termNorm = normalizeSearch(riesgoEncontrado);\n  if (migratoryTerms.some(term => termNorm === normalizeSearch(term))) { Tipo_riesgo_preIA = 'Riesgo migratorio'; Tipo_lead_preIA = 'Riesgo migratorio/documental'; }\n  else if (documentalTerms.some(term => termNorm === normalizeSearch(term))) { Tipo_riesgo_preIA = 'Riesgo documental'; Tipo_lead_preIA = 'Riesgo fiscal/legal'; }\n  else { Tipo_riesgo_preIA = 'Riesgo fiscal/legal'; Tipo_lead_preIA = 'Riesgo fiscal/legal'; }\n}\nlet Semaforo_preIA = 'VERDE';\nlet Requiere_revision_preIA = 'NO';\nlet Dato_faltante_preIA = '';\nlet Accion_recomendada_preIA = '';\nlet Siguiente_accion_preIA = '';\nif (!Consentimiento_valido) {\n  Semaforo_preIA = 'ROJO'; Requiere_revision_preIA = 'SI'; Tipo_riesgo_preIA = 'Riesgo por falta de consentimiento'; Tipo_lead_preIA = 'Riesgo fiscal/legal'; Riesgo_duro_motivo = Riesgo_duro_motivo || 'Consentimiento no v?lido o no aceptado expresamente.'; Accion_recomendada_preIA = 'Revisi?n humana antes de responder'; Siguiente_accion_preIA = 'Natalia debe revisar el caso antes de enviar cualquier respuesta o enlace de reserva';\n} else if (Riesgo_duro_detectado === 'SI') {\n  Semaforo_preIA = 'ROJO'; Requiere_revision_preIA = 'SI'; Accion_recomendada_preIA = 'Revisi?n humana antes de responder'; Siguiente_accion_preIA = 'Natalia debe revisar el caso antes de enviar cualquier respuesta o enlace de reserva';\n} else if (!contactoValido) {\n  Semaforo_preIA = 'AMARILLO'; Requiere_revision_preIA = 'NO'; Dato_faltante_preIA = 'Email o WhatsApp v?lido'; Tipo_riesgo_preIA = 'Falta informaci?n'; Accion_recomendada_preIA = 'Pedir informaci?n faltante'; Siguiente_accion_preIA = 'Pedir al lead un email o WhatsApp v?lido antes de avanzar.';\n}\nconst debugCampos = Object.entries(byLabel).map(([key, value]) => key + ': ' + value).join(' || ');\n// SALIDA_FINAL\nreturn [{ json: { ...lead, Consentimiento_valido: Consentimiento_valido ? 'SI' : 'NO', Email_valido: Email_valido ? 'SI' : 'NO', WhatsApp_valido: WhatsApp_valido ? 'SI' : 'NO', Riesgo_duro_detectado, Riesgo_duro_motivo, Semaforo_preIA, Requiere_revision_preIA, Tipo_riesgo_preIA, Tipo_lead_preIA, Dato_faltante_preIA, Accion_recomendada_preIA, Siguiente_accion_preIA, Estado: 'NUEVO', Canal_origen: 'Tally', Es_test, Debug_campos: debugCampos } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "9b735adb-21a1-4d79-a5db-7f12184f7f53",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "preia-rojo-condition",
+              "leftValue": "={{ $json.Semaforo_preIA }}",
+              "rightValue": "ROJO",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        -16
+      ],
+      "id": "5138074f-44c9-4938-917e-8ef458bc7528",
+      "name": "IF ROJO_PREIA",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1tH_LY0PhM3bkNR6F1DFGhf311-xRFcciEwNI6pOPq7g",
+          "mode": "list",
+          "cachedResultName": "02_NC_Plantilla_Validacion_Leads_Fase1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tH_LY0PhM3bkNR6F1DFGhf311-xRFcciEwNI6pOPq7g/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1293551361,
+          "mode": "list",
+          "cachedResultName": "Diagnostico",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tH_LY0PhM3bkNR6F1DFGhf311-xRFcciEwNI6pOPq7g/edit#gid=1293551361"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $json.Email }}",
+            "WhatsApp": "={{ $json.WhatsApp }}",
+            "Idioma": "={{ $json.Idioma }}",
+            "Origen_ingresos": "={{ $json.Origen_ingresos }}",
+            "Duda_principal": "={{ $json.Duda_principal }}",
+            "Resumen_caso": "={{ $json.Resumen_caso }}",
+            "Urgencia": "={{ $json.Urgencia }}",
+            "Consentimiento": "={{ $json.Consentimiento }}",
+            "Nombre_y_apellidos": "={{ $json.Nombre_y_apellidos }}",
+            "Fecha": "={{ $json.Fecha }}",
+            "Lead_ID": "={{ $json.Lead_ID }}",
+            "En_Espana": "={{ $json.En_Espana }}",
+            "Situacion_actual": "={{ $json.Situacion_actual }}",
+            "Estado": "={{ $json.Estado }}",
+            "Es_test": "={{ $json.Es_test }}",
+            "Canal_origen": "={{ $json.Canal_origen }}",
+            "Consentimiento_valido": "={{ $json.Consentimiento_valido }}",
+            "Email_valido": "={{ $json.Email_valido }}",
+            "WhatsApp_valido": "={{ $json.WhatsApp_valido }}",
+            "Riesgo_duro_detectado": "={{ $json.Riesgo_duro_detectado }}",
+            "Riesgo_duro_motivo": "={{ $json.Riesgo_duro_motivo }}",
+            "Semaforo_preIA": "={{ $json.Semaforo_preIA }}",
+            "Requiere_revision_preIA": "={{ $json.Requiere_revision_preIA }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "WhatsApp",
+              "displayName": "WhatsApp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Idioma",
+              "displayName": "Idioma",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Origen_ingresos",
+              "displayName": "Origen_ingresos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Duda_principal",
+              "displayName": "Duda_principal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Resumen_caso",
+              "displayName": "Resumen_caso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Urgencia",
+              "displayName": "Urgencia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Consentimiento",
+              "displayName": "Consentimiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Nombre_y_apellidos",
+              "displayName": "Nombre_y_apellidos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Lead_ID",
+              "displayName": "Lead_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "En_Espana",
+              "displayName": "En_Espana",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Situacion_actual",
+              "displayName": "Situacion_actual",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Es_test",
+              "displayName": "Es_test",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Canal_origen",
+              "displayName": "Canal_origen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Consentimiento_valido",
+              "displayName": "Consentimiento_valido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email_valido",
+              "displayName": "Email_valido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "WhatsApp_valido",
+              "displayName": "WhatsApp_valido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Riesgo_duro_detectado",
+              "displayName": "Riesgo_duro_detectado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Riesgo_duro_motivo",
+              "displayName": "Riesgo_duro_motivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Semaforo_preIA",
+              "displayName": "Semaforo_preIA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Requiere_revision_preIA",
+              "displayName": "Requiere_revision_preIA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        784,
+        -16
+      ],
+      "id": "7ee4b412-a9c0-4bfb-afce-f146e73b7516",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "D0HoMOhPWt2yuV9e",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analiza este lead de NEGOCIA CONTROL y clasif\u00edcalo para diagn\u00f3stico fiscal inicial.\n\nIMPORTANTE:\nNo tomes decisiones fiscales definitivas.\nNo des asesoramiento legal cerrado.\nNo inventes datos.\nTu tarea es hacer un primer triaje operativo para decidir si el lead puede pasar a diagn\u00f3stico, necesita aclaraci\u00f3n o requiere revisi\u00f3n humana.\n\nDATOS DEL LEAD:\n\nLead ID: {{ $json.Lead_ID }}\nFecha: {{ $json.Fecha }}\nNombre: {{ $json.Nombre_y_apellidos }}\nEmail: {{ $json.Email }}\nWhatsApp: {{ $json.WhatsApp }}\nIdioma: {{ $json.Idioma }}\nEst\u00e1 en Espa\u00f1a: {{ $json.En_Espana }}\nSituaci\u00f3n actual: {{ $json.Situacion_actual }}\nOrigen de ingresos: {{ $json.Origen_ingresos }}\nDuda principal: {{ $json.Duda_principal }}\nResumen del caso: {{ $json.Resumen_caso }}\nUrgencia: {{ $json.Urgencia }}\nConsentimiento: {{ $json.Consentimiento }}\nEs test: {{ $json.Es_test }}\nCanal origen: {{ $json.Canal_origen }}\n\nTIPOS DE LEAD POSIBLES:\n- Alta aut\u00f3nomo\n- Fiscalidad migrante\n- Ingresos extranjero\n- Residencia + fiscalidad\n- Pluriactividad\n- Empleado / IRPF\n- Negocio en Espa\u00f1a\n- Riesgo fiscal/legal\n- Caso fuera de alcance\n- Informaci\u00f3n insuficiente\n\nTIPOS DE RIESGO POSIBLES:\n- Sin riesgo relevante\n- Falta informaci\u00f3n\n- Riesgo fiscal/legal\n- Riesgo migratorio\n- Riesgo documental\n- Riesgo por urgencia\n- Riesgo por falta de consentimiento\n- Fuera de alcance\n\nACCIONES POSIBLES:\n- Enviar enlace de reserva diagn\u00f3stico\n- Pedir informaci\u00f3n faltante\n- Revisi\u00f3n humana antes de responder\n- No automatizar respuesta\n- Derivar fuera de alcance\n\nDIFERENCIA ENTRE COLUMNAS:\n\nAccion_recomendada:\nDebe ser una categor\u00eda operativa breve. Usa solo una de las acciones posibles.\n\nSiguiente_accion:\nDebe ser una instrucci\u00f3n concreta para Natalia o para el equipo de NEGOCIA CONTROL.\n\nREGLA OBLIGATORIA DE IDIOMA PARA Respuesta_sugerida:\n\nLa columna Respuesta_sugerida debe escribirse obligatoriamente en el idioma indicado en el campo Idioma del lead.\n\nIdioma del lead actual: {{ $json.Idioma }}\n\nReglas:\n- Si Idioma es \"Espa\u00f1ol\", Respuesta_sugerida debe estar en espa\u00f1ol.\n- Si Idioma es \"Ingl\u00e9s\", Respuesta_sugerida debe estar en ingl\u00e9s.\n- Si Idioma es \"Ucraniano\", Respuesta_sugerida debe estar en ucraniano.\n- No traduzcas necesariamente el resto de campos; solo es obligatorio adaptar Respuesta_sugerida.\n- Nunca escribas Respuesta_sugerida en espa\u00f1ol si Idioma es \"Ingl\u00e9s\".\n- Nunca escribas Respuesta_sugerida en espa\u00f1ol si Idioma es \"Ucraniano\".\n- No mezcles idiomas ni caracteres extra\u00f1os en Respuesta_sugerida.\n\nCONTROL DE CALIDAD ANTES DE RESPONDER:\n\nAntes de devolver el JSON, comprueba:\n\n1. Si Semaforo_IA es AMARILLO, Dato_faltante debe listar datos concretos que faltan.\n2. Si Accion_recomendada es \"Pedir informaci\u00f3n faltante\", Dato_faltante no puede ser \"No faltan datos relevantes\".\n3. Si Semaforo_IA es ROJO, Requiere_revision debe ser \"SI\".\n4. Si Semaforo_IA es ROJO, no ofrezcas enlace de reserva.\n5. Si Semaforo_IA es VERDE, no des asesoramiento fiscal; solo invita a reservar diagn\u00f3stico.\n6. Respuesta_sugerida debe estar en el idioma indicado en el campo Idioma.\n7. Respuesta_sugerida no puede mezclar idiomas ni caracteres extra\u00f1os.\n8. Si Semaforo_IA es VERDE, Accion_recomendada debe ser \"Enviar enlace de reserva diagn\u00f3stico\".\n9. Si Semaforo_IA es AMARILLO, Accion_recomendada debe ser \"Pedir informaci\u00f3n faltante\".\n10. Si Semaforo_IA es ROJO, Accion_recomendada debe ser \"Revisi\u00f3n humana antes de responder\".\n\nDevuelve SOLO un JSON v\u00e1lido, sin explicaci\u00f3n adicional, sin markdown y sin texto fuera del JSON.\n\nEl JSON debe tener exactamente esta estructura:\n\n{\n  \"Lead_ID\": \"{{ $json.Lead_ID }}\",\n  \"Semaforo_IA\": \"VERDE | AMARILLO | ROJO\",\n  \"Tipo_lead_IA\": \"\",\n  \"Resumen_IA\": \"\",\n  \"Motivo_clasificacion\": \"\",\n  \"Dato_faltante\": \"\",\n  \"Riesgo_detectado\": \"\",\n  \"Tipo_riesgo\": \"\",\n  \"Accion_recomendada\": \"\",\n  \"Siguiente_accion\": \"\",\n  \"Respuesta_sugerida\": \"\",\n  \"Requiere_revision\": \"SI | NO\"\n}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Act\u00faa como el Arquitecto de Triaje Operativo de NEGOCIA CONTROL.\n\nTu tarea es clasificar leads para un diagn\u00f3stico fiscal inicial. No das asesoramiento fiscal definitivo, no tomas decisiones legales cerradas y no inventas informaci\u00f3n.\n\nTu objetivo es decidir si el lead:\n1. puede pasar a diagn\u00f3stico,\n2. necesita aclaraci\u00f3n previa,\n3. requiere revisi\u00f3n humana antes de cualquier respuesta autom\u00e1tica.\n\nREGLA DE PRIORIDAD ABSOLUTA \u2014 ROJO DIRECTO:\n\nAntes de clasificar, revisa todos los datos del lead.\n\nEl lead debe clasificarse obligatoriamente como ROJO si ocurre cualquiera de estas situaciones:\n\n1. No hay consentimiento.\n2. Aparece una se\u00f1al de riesgo fiscal, legal, migratorio o documental.\n3. El caso menciona sanciones, deudas, inspecciones, requerimientos, fraude, ingresos ocultos o situaci\u00f3n irregular.\n4. El caso est\u00e1 claramente fuera de alcance.\n\nPALABRAS O EXPRESIONES DE RIESGO EN ESPA\u00d1OL:\n\n- multa\n- deuda\n- inspecci\u00f3n\n- inspeccion\n- sanci\u00f3n\n- sancion\n- denuncia\n- requerimiento\n- embargo\n- Hacienda me reclama\n- Agencia Tributaria me reclama\n- sin contrato\n- papeles caducados\n- situaci\u00f3n irregular\n- situacion irregular\n- fraude\n- ocultar ingresos\n- no declarar\n- dinero en negro\n- negro\n- evitar impuestos\n- urgente por problema con Hacienda\n\nPALABRAS O EXPRESIONES DE RIESGO EN INGL\u00c9S:\n\n- tax notice\n- tax requirement\n- tax debt\n- tax inspection\n- tax audit\n- fine\n- penalty\n- sanction\n- undeclared income\n- cash without invoice\n- work without contract\n- irregular situation\n- avoid taxes\n- Hacienda claim\n- tax authority claim\n\nPALABRAS O EXPRESIONES DE RIESGO EN UCRANIANO:\n\n- \u0448\u0442\u0440\u0430\u0444\n- \u0431\u043e\u0440\u0433\n- \u043f\u043e\u0434\u0430\u0442\u043a\u043e\u0432\u0438\u0439 \u0431\u043e\u0440\u0433\n- \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u043a\u0430\n- \u043f\u043e\u0434\u0430\u0442\u043a\u043e\u0432\u0430 \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u043a\u0430\n- \u0456\u043d\u0441\u043f\u0435\u043a\u0446\u0456\u044f\n- \u0441\u0430\u043d\u043a\u0446\u0456\u044f\n- \u0441\u043a\u0430\u0440\u0433\u0430\n- \u0431\u0435\u0437 \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u0443\n- \u043f\u0440\u043e\u0441\u0442\u0440\u043e\u0447\u0435\u043d\u0456 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0438\n- \u043d\u0435\u043b\u0435\u0433\u0430\u043b\u044c\u043d\u0430 \u0441\u0438\u0442\u0443\u0430\u0446\u0456\u044f\n- \u043d\u0435 \u0434\u0435\u043a\u043b\u0430\u0440\u0443\u0432\u0430\u0442\u0438\n- \u043f\u0440\u0438\u0445\u043e\u0432\u0430\u0442\u0438 \u0434\u043e\u0445\u043e\u0434\u0438\n- \u0433\u043e\u0442\u0456\u0432\u043a\u0430 \u0431\u0435\u0437 \u0440\u0430\u0445\u0443\u043d\u043a\u0443\n- \u043f\u0440\u043e\u0431\u043b\u0435\u043c\u0438 \u0437 \u043f\u043e\u0434\u0430\u0442\u043a\u043e\u0432\u043e\u044e\n\nCuando se active una regla de ROJO directo:\n\n- Semaforo_IA debe ser \"ROJO\".\n- Tipo_lead_IA debe ser \"Riesgo fiscal/legal\", salvo que el riesgo sea claramente migratorio o documental.\n- Tipo_riesgo debe describir el tipo de riesgo principal.\n- Accion_recomendada debe ser \"Revisi\u00f3n humana antes de responder\".\n- Siguiente_accion debe indicar que Natalia debe revisar el caso antes de enviar cualquier respuesta autom\u00e1tica o enlace de reserva.\n- Requiere_revision debe ser \"SI\".\n- Respuesta_sugerida no debe ofrecer enlace de reserva ni diagn\u00f3stico autom\u00e1tico.\n\nEsta regla tiene prioridad absoluta sobre cualquier otra. Aunque el caso tambi\u00e9n parezca de alta de aut\u00f3nomo, fiscalidad migrante, ingresos extranjeros o pluriactividad, si hay se\u00f1al de riesgo alto, siempre debe ser ROJO.\n\nCLASIFICACI\u00d3N GENERAL:\n\nVERDE:\n- Tiene consentimiento.\n- Hay datos b\u00e1sicos suficientes.\n- El caso encaja con diagn\u00f3stico fiscal inicial.\n- No hay se\u00f1ales de riesgo grave.\n- Puede recibir enlace para reservar diagn\u00f3stico.\n\nAMARILLO:\n- Tiene consentimiento.\n- El caso podr\u00eda encajar.\n- Falta informaci\u00f3n importante o hay ambig\u00fcedad.\n- Necesita una pregunta aclaratoria antes de ofrecer diagn\u00f3stico.\n\nROJO:\n- No hay consentimiento.\n- Hay riesgo fiscal, legal, migratorio o documental alto.\n- Hay sanci\u00f3n, multa, inspecci\u00f3n, deuda, denuncia, papeles caducados, sin contrato, situaci\u00f3n irregular o fuera de alcance.\n- Requiere revisi\u00f3n humana antes de responder autom\u00e1ticamente.\n\nTIPO_LEAD_IA:\n\nTipo_lead_IA debe contener una sola categor\u00eda principal.\n\nCategor\u00edas posibles:\n- Alta aut\u00f3nomo\n- Fiscalidad migrante\n- Ingresos extranjero\n- Residencia + fiscalidad\n- Pluriactividad\n- Empleado / IRPF\n- Negocio en Espa\u00f1a\n- Riesgo fiscal/legal\n- Riesgo migratorio/documental\n- Caso fuera de alcance\n- Informaci\u00f3n insuficiente\n\nREGLAS DE FORMATO:\n\n- Responde \u00fanicamente con JSON v\u00e1lido.\n- No uses markdown.\n- No escribas explicaciones fuera del JSON.\n- No devuelvas null.\n- No devuelvas true o false.\n- No devuelvas undefined.\n- No dejes campos vac\u00edos.\n- Todos los campos deben ser texto legible para una persona.\n- Usa siempre \"VERDE\", \"AMARILLO\" o \"ROJO\" en may\u00fasculas.\n- Requiere_revision solo puede ser \"SI\" o \"NO\".\n- Si Semaforo_IA es \"ROJO\", Requiere_revision siempre debe ser \"SI\".\n- Si Semaforo_IA es \"ROJO\", Accion_recomendada siempre debe ser \"Revisi\u00f3n humana antes de responder\".\n- Si no hay riesgo, escribe \"Sin riesgo relevante\".\n- Si no falta ning\u00fan dato, escribe \"No faltan datos relevantes\".\n\nREGLAS DE COHERENCIA INTERNA:\n\n- Si Accion_recomendada es \"Pedir informaci\u00f3n faltante\", entonces Dato_faltante debe contener una lista concreta de datos que faltan.\n- Si Semaforo_IA es \"AMARILLO\", Dato_faltante debe explicar qu\u00e9 informaci\u00f3n falta o qu\u00e9 punto debe aclararse.\n- Si Semaforo_IA es \"VERDE\", Dato_faltante puede ser \"No faltan datos relevantes\".\n- Si Semaforo_IA es \"ROJO\", Dato_faltante debe indicar qu\u00e9 informaci\u00f3n debe revisar Natalia antes de responder.\n- Si Semaforo_IA es \"ROJO\" por multa, deuda, inspecci\u00f3n, sanci\u00f3n, denuncia, requerimiento o embargo, Dato_faltante debe indicar: importe, organismo, estado del expediente, fecha de notificaci\u00f3n y documentaci\u00f3n recibida.\n- Si Semaforo_IA es \"ROJO\", Resumen_IA debe explicar en una o dos frases la situaci\u00f3n general y el motivo de revisi\u00f3n humana.\n- Si Semaforo_IA es \"VERDE\", Respuesta_sugerida puede invitar a reservar diagn\u00f3stico, pero no debe dar asesoramiento fiscal.\n- Si Semaforo_IA es \"AMARILLO\", Respuesta_sugerida debe pedir los datos faltantes de forma clara.\n- Si Semaforo_IA es \"ROJO\", Respuesta_sugerida debe indicar que el caso requiere revisi\u00f3n previa antes de proponer el siguiente paso.\n\nREGLAS PARA Respuesta_sugerida:\n\n- Debe ser breve, profesional, humana y prudente.\n- No debe sonar rob\u00f3tica.\n- No debe prometer resultados.\n- No debe dar asesoramiento fiscal definitivo.\n- No debe afirmar que la persona puede empezar a trabajar, declarar, facturar o regularizar nada.\n- No debe usar la frase \"please wait\".\n- No debe mezclar idiomas ni caracteres extra\u00f1os.\n- No debe usar caracteres de otros idiomas que no correspondan al idioma indicado.\n- Puede mantener nombres propios como NEGOCIA CONTROL, Hacienda o Espa\u00f1a.\n\nIDIOMA DE Respuesta_sugerida:\n\n- Si Idioma es \"Espa\u00f1ol\", Respuesta_sugerida debe estar \u00fanicamente en espa\u00f1ol.\n- Si Idioma es \"Ingl\u00e9s\", Respuesta_sugerida debe estar \u00fanicamente en ingl\u00e9s.\n- Si Idioma es \"Ucraniano\", Respuesta_sugerida debe estar \u00fanicamente en ucraniano correcto, usando alfabeto cir\u00edlico.\n- Si el idioma indicado es Ingl\u00e9s o Ucraniano, no uses espa\u00f1ol salvo nombres propios inevitables.\n\nREGLAS FINALES DE CALIDAD DE Respuesta_sugerida:\n\n- En casos VERDES, Respuesta_sugerida debe invitar a reservar diagn\u00f3stico inicial, pero no debe afirmar que NEGOCIA CONTROL ya puede resolver, registrar, declarar, regularizar o tramitar el caso.\n- En casos AMARILLOS, Respuesta_sugerida debe pedir datos concretos y suficientes para decidir el siguiente paso.\n- En casos ROJOS, Respuesta_sugerida debe ser prudente y explicar que el caso requiere revisi\u00f3n humana previa antes de proponer el siguiente paso.\n- Si el caso menciona efectivo, banco, trazabilidad o pagos en met\u00e1lico, Dato_faltante debe incluir origen de los fondos, justificantes disponibles, importes, fechas y relaci\u00f3n con clientes."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1280,
+        96
+      ],
+      "id": "405a6b4a-35e4-4f1e-accf-2a6e00a61353",
+      "name": "Basic LLM Chain",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        288
+      ],
+      "id": "01eaf05a-b957-42b8-9e4d-d71e5a940c7c",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "XMTLDXcLOBqVOtHU",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let source = {};\nlet appended = {};\ntry { source = $('Code in JavaScript').first().json; } catch (error) { source = {}; }\ntry { appended = $('Append row in sheet1').first().json; } catch (error) { appended = {}; }\nconst lead = { ...source, ...appended };\nconst raw = $json.output ?? $json.text ?? $json.response ?? $json.message?.content ?? $json.error?.message ?? '';\nconst fence = String.fromCharCode(96).repeat(3);\nlet cleaned = String(raw).replace(new RegExp(fence + 'json', 'g'), '').replace(new RegExp(fence, 'g'), '').trim();\nlet parsed;\nlet iaJsonValido = 'SI';\nlet errorIa = $json.error ? 'SI' : 'NO';\ntry { parsed = JSON.parse(cleaned); } catch (error) { iaJsonValido = 'NO'; errorIa = 'SI'; parsed = { Semaforo_IA: 'ROJO', Tipo_lead_IA: 'Error de IA', Resumen_IA: 'La IA no devolvi? un JSON v?lido o fall? la llamada.', Motivo_clasificacion: 'Error t?cnico al interpretar la respuesta de la IA. Respuesta recibida: ' + String(raw).slice(0, 500), Dato_faltante: '', Riesgo_detectado: 'Error de procesamiento IA', Tipo_riesgo: 'Falta informaci?n', Accion_recomendada: 'Revisi?n humana antes de responder', Siguiente_accion: 'Revisar manualmente este lead antes de enviar cualquier respuesta.', Respuesta_sugerida: '', Requiere_revision: 'SI' }; }\nconst result = { ...lead, ...parsed, Lead_ID: parsed.Lead_ID || lead.Lead_ID || '', Error_IA: errorIa, IA_JSON_valido: iaJsonValido };\nif (lead.Semaforo_preIA === 'ROJO') { result.Semaforo_IA = 'ROJO'; result.Semaforo_final = 'ROJO'; result.Tipo_lead_IA = lead.Tipo_lead_preIA || 'Riesgo fiscal/legal'; result.Riesgo_detectado = lead.Riesgo_duro_motivo || result.Riesgo_detectado || 'Riesgo pre-IA detectado'; result.Tipo_riesgo = lead.Tipo_riesgo_preIA || 'Riesgo fiscal/legal'; result.Accion_recomendada = 'Revisi?n humana antes de responder'; result.Siguiente_accion = 'Natalia debe revisar el caso antes de enviar cualquier respuesta o enlace de reserva'; result.Respuesta_sugerida = ''; result.Requiere_revision = 'SI'; }\nelse if (lead.Semaforo_preIA === 'AMARILLO' && result.Semaforo_IA !== 'ROJO') { result.Semaforo_IA = 'AMARILLO'; result.Semaforo_final = 'AMARILLO'; result.Dato_faltante = lead.Dato_faltante_preIA || 'Email o WhatsApp v?lido'; result.Tipo_riesgo = result.Tipo_riesgo || 'Falta informaci?n'; result.Accion_recomendada = 'Pedir informaci?n faltante'; result.Siguiente_accion = lead.Siguiente_accion_preIA || 'Pedir al lead un email o WhatsApp v?lido antes de avanzar.'; result.Requiere_revision = result.Requiere_revision === 'SI' ? 'SI' : 'NO'; }\nelse { result.Semaforo_final = result.Semaforo_final || result.Semaforo_IA || 'AMARILLO'; }\nif (errorIa === 'SI' || iaJsonValido === 'NO') { result.Semaforo_IA = 'ROJO'; result.Semaforo_final = 'ROJO'; result.Requiere_revision = 'SI'; result.Accion_recomendada = 'Revisi?n humana antes de responder'; result.Siguiente_accion = 'Revisar manualmente este lead antes de enviar cualquier respuesta.'; result.Respuesta_sugerida = ''; }\nreturn [{ json: result }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        96
+      ],
+      "id": "b139ab9a-ccb8-4f72-a0f0-175fb39198d4",
+      "name": "Traductor IA a Sheets"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1tH_LY0PhM3bkNR6F1DFGhf311-xRFcciEwNI6pOPq7g",
+          "mode": "list",
+          "cachedResultName": "02_NC_Plantilla_Validacion_Leads_Fase1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tH_LY0PhM3bkNR6F1DFGhf311-xRFcciEwNI6pOPq7g/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1293551361,
+          "mode": "list",
+          "cachedResultName": "Diagnostico",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tH_LY0PhM3bkNR6F1DFGhf311-xRFcciEwNI6pOPq7g/edit#gid=1293551361"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Lead_ID": "={{ $json.Lead_ID }}",
+            "row_number": 0,
+            "Semaforo_IA": "={{ $json.Semaforo_IA }}",
+            "Semaforo_final": "={{ $json.Semaforo_final }}",
+            "Tipo_lead_IA": "={{ $json.Tipo_lead_IA }}",
+            "Resumen_IA": "={{ $json.Resumen_IA }}",
+            "Motivo_clasificacion": "={{ $json.Motivo_clasificacion }}",
+            "Dato_faltante": "={{ $json.Dato_faltante }}",
+            "Riesgo_detectado": "={{ $json.Riesgo_detectado }}",
+            "Tipo_riesgo": "={{ $json.Tipo_riesgo }}",
+            "Accion_recomendada": "={{ $json.Accion_recomendada }}",
+            "Siguiente_accion": "={{ $json.Siguiente_accion }}",
+            "Respuesta_sugerida": "={{ $json.Respuesta_sugerida }}",
+            "Requiere_revision": "={{ $json.Requiere_revision }}",
+            "Estado": "={{ $json.Estado || \"Clasificado\" }}",
+            "Error_IA": "={{ $json.Error_IA }}",
+            "IA_JSON_valido": "={{ $json.IA_JSON_valido }}"
+          },
+          "matchingColumns": [
+            "Lead_ID"
+          ],
+          "schema": [
+            {
+              "id": "Lead_ID",
+              "displayName": "Lead_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false,
+              "readOnly": true
+            },
+            {
+              "id": "Semaforo_IA",
+              "displayName": "Semaforo_IA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Semaforo_final",
+              "displayName": "Semaforo_final",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tipo_lead_IA",
+              "displayName": "Tipo_lead_IA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Resumen_IA",
+              "displayName": "Resumen_IA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Motivo_clasificacion",
+              "displayName": "Motivo_clasificacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Dato_faltante",
+              "displayName": "Dato_faltante",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Riesgo_detectado",
+              "displayName": "Riesgo_detectado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tipo_riesgo",
+              "displayName": "Tipo_riesgo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Accion_recomendada",
+              "displayName": "Accion_recomendada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Siguiente_accion",
+              "displayName": "Siguiente_accion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Respuesta_sugerida",
+              "displayName": "Respuesta_sugerida",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Requiere_revision",
+              "displayName": "Requiere_revision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Error_IA",
+              "displayName": "Error_IA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "IA_JSON_valido",
+              "displayName": "IA_JSON_valido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1792,
+        -16
+      ],
+      "id": "a69a2da8-5df1-46de-ba65-ebd8120e3b38",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "D0HoMOhPWt2yuV9e",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let source = {};\ntry { source = $('Code in JavaScript').first().json; } catch (error) { source = {}; }\nconst lead = { ...source, ...$json };\nconst motivo = lead.Riesgo_duro_motivo || 'Regla pre-IA activada.';\nconst tipoRiesgo = lead.Tipo_riesgo_preIA || 'Riesgo fiscal/legal';\nconst tipoLead = lead.Tipo_lead_preIA || (tipoRiesgo === 'Riesgo migratorio' ? 'Riesgo migratorio/documental' : 'Riesgo fiscal/legal');\nreturn [{ json: { ...lead, Semaforo_IA: 'ROJO', Semaforo_final: 'ROJO', Tipo_lead_IA: tipoLead, Resumen_IA: 'Clasificaci?n directa por reglas duras previas a IA.', Motivo_clasificacion: motivo, Dato_faltante: lead.Dato_faltante_preIA || '', Riesgo_detectado: motivo, Tipo_riesgo: tipoRiesgo, Accion_recomendada: 'Revisi?n humana antes de responder', Siguiente_accion: 'Natalia debe revisar el caso antes de enviar cualquier respuesta o enlace de reserva', Respuesta_sugerida: '', Requiere_revision: 'SI', Error_IA: 'NO', IA_JSON_valido: 'NO_APLICA', Estado: 'Pendiente revisi?n humana' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        -176
+      ],
+      "id": "b48d53d0-1b61-46df-8fc5-000000000001",
+      "name": "Clasificacion ROJO_PREIA"
+    },
+    {
+      "parameters": {
+        "jsCode": "let source = {};\ntry { source = $('Code in JavaScript').first().json; } catch (error) { source = {}; }\nconst lead = { ...source, ...$json };\nconst semaforo = lead.Semaforo_final || lead.Semaforo_IA || '';\nconst requiereRevision = lead.Requiere_revision === 'SI';\nconst hayErrorIa = lead.Error_IA === 'SI' || lead.IA_JSON_valido === 'NO';\nconst requiereAviso = semaforo === 'ROJO' || requiereRevision || hayErrorIa;\nconst sheetUrl = 'https://docs.google.com/spreadsheets/d/1tH_LY0PhM3bkNR6F1DFGhf311-xRFcciEwNI6pOPq7g/edit#gid=1293551361';\nconst mensaje = ['AVISO INTERNO - CONFIGURAR', 'Lead_ID: ' + (lead.Lead_ID || ''), 'Nombre_y_apellidos: ' + (lead.Nombre_y_apellidos || ''), 'Email: ' + (lead.Email || ''), 'WhatsApp: ' + (lead.WhatsApp || ''), 'Semaforo: ' + semaforo, 'Riesgo_detectado: ' + (lead.Riesgo_detectado || ''), 'Motivo_clasificacion: ' + (lead.Motivo_clasificacion || ''), 'Siguiente_accion: ' + (lead.Siguiente_accion || ''), 'Google Sheets: ' + sheetUrl].join('\\n');\nreturn [{ json: { ...lead, Aviso_interno_requerido: requiereAviso ? 'SI' : 'NO', Aviso_interno_mensaje: requiereAviso ? mensaje : '' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2048,
+        -16
+      ],
+      "id": "adf01f8a-d1a7-4d1d-9c77-000000000001",
+      "name": "AVISO INTERNO - CONFIGURAR",
+      "notesInFlow": true,
+      "notes": "Placeholder sin credenciales. Configurar Email/Telegram interno si Aviso_interno_requerido = SI. No enviar al lead en MVP."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://16.171.174.52:3001/api/intake/diagnostico",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        240
+      ],
+      "id": "628996a9-5828-4b55-9e37-f01bfacfb592",
+      "name": "HTTP Supabase Intake",
+      "continueOnFail": true,
+      "notesInFlow": true,
+      "notes": "Envia lead normalizado al backend AWS para guardar en Supabase (modo paralelo a Google Sheets)."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Supabase Intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "IF ROJO_PREIA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF ROJO_PREIA": {
+      "main": [
+        [
+          {
+            "node": "Clasificacion ROJO_PREIA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Traductor IA a Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traductor IA a Sheets": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificacion ROJO_PREIA": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "AVISO INTERNO - CONFIGURAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Supabase Intake": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "timeSavedMode": "fixed",
+    "timezone": "America/Port_of_Spain"
+  },
+  "versionId": "b0526324-c682-48db-aa3b-bc851123e37c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "52b529c1e63ddff901fd1218cbce79f19a5259cfa604b07ecf06b31597e07a87"
+  },
+  "id": "KIDMtqzjYPMQlDDz",
+  "tags": []
+}

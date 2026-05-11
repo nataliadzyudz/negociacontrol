@@ -1,0 +1,98 @@
+{
+  "name": "NC 2B2 LAB INTAKE TEST",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nc-2b2-lab-intake-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a0f3b1a8-2f5b-4a2b-b9f9-2b2f5d7d1001",
+      "name": "Webhook Lab Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        0
+      ],
+      "webhookId": "nc-2b2-lab-intake-test"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $json.body ?? $json;\nconst isTest = input.es_test === true || input.es_test === 'true';\n\nif (!isTest) {\n  return [{\n    json: {\n      ok: false,\n      mode: 'lab',\n      error: 'ONLY_ES_TEST_TRUE_ALLOWED',\n      received_es_test: input.es_test ?? null,\n      statusCode: 400\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    ok: true,\n    mode: 'lab',\n    lead_code: input.lead_code ?? null,\n    es_test: true,\n    statusCode: 200,\n    received_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "b0f3b1a8-2f5b-4a2b-b9f9-2b2f5d7d1002",
+      "name": "Validate es_test Lab Only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: $json.ok, mode: $json.mode, lead_code: $json.lead_code, es_test: $json.es_test, error: $json.error, received_es_test: $json.received_es_test, received_at: $json.received_at } }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}"
+        }
+      },
+      "id": "c0f3b1a8-2f5b-4a2b-b9f9-2b2f5d7d1003",
+      "name": "Respond Lab Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Lab Intake": {
+      "main": [
+        [
+          {
+            "node": "Validate es_test Lab Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate es_test Lab Only": {
+      "main": [
+        [
+          {
+            "node": "Respond Lab Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2b2-lab-intake-test-v1",
+  "meta": {
+    "phase": "2B",
+    "mode": "lab",
+    "sourceReference": "https://n8n-nc-n8n.wmd3t3.easypanel.host/workflow/0UpQEVljD2UKesSe?projectId=LM4bjtMYou00H907&uiContext=workflow_list",
+    "doNotUseProductionCredentials": true,
+    "doesNotCallGoogleSheets": true,
+    "doesNotSendMessages": true
+  },
+  "tags": [
+    {
+      "name": "NC-LAB"
+    },
+    {
+      "name": "FASE-2B"
+    }
+  ]
+}

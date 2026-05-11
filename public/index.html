@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NC Control Tower | CRM MVP v1.0</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Noto+Serif:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Main Content (Full Width Control Tower) -->
+        <main class="main-content">
+            <!-- Universal Header NC -->
+            <header class="main-header">
+                <div class="header-left">
+                    <div class="logo-group">
+                        <div class="brand-identity">
+                            <span class="logo-primary">NEGOCIA</span>
+                            <span class="logo-secondary">CONTROL</span>
+                        </div>
+                        <div class="control-tower-tag">
+                            <span class="tower-title">Control Tower</span>
+                            <span class="tower-subtitle">Leads · Diagnóstico · Conversión</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="header-center">
+                    <div class="search-container">
+                        <input type="text" id="global-search" placeholder="Buscar lead por nombre o ID..."
+                            aria-label="Buscador global">
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <button id="btn-add-lead" class="btn-primary-compact">+ Nuevo lead</button>
+                </div>
+            </header>
+
+            <!-- Integrated Control Center Bar (Ultra-Compact) -->
+            <section class="dashboard-bar">
+                <!-- Left: Strategic Metrics -->
+                <div class="metrics-group primary">
+                    <div class="stat-card" data-filter="all" id="stat-card-total">
+                        <span class="stat-label">Total</span>
+                        <span class="stat-value" id="stat-total">--</span>
+                    </div>
+                    <div class="stat-card urgent-alert" data-filter="urgente">
+                        <span class="stat-label">Urgentes</span>
+                        <span class="stat-value" id="stat-urgentes">--</span>
+                    </div>
+                    <div class="stat-card border-error" data-incidencia="ERROR_IA">
+                        <span class="stat-label">Error IA</span>
+                        <span class="stat-value" id="stat-error-ia">--</span>
+                    </div>
+                </div>
+
+                <div class="metrics-separator"></div>
+
+                <div class="metrics-group semaphore">
+                    <div class="stat-pill border-verde" data-semaforo="VERDE">
+                        <span class="pill-label">Verdes</span>
+                        <span class="pill-value" id="stat-verdes">--</span>
+                    </div>
+                    <div class="stat-pill border-amarillo" data-semaforo="AMARILLO">
+                        <span class="pill-label">Amarillos</span>
+                        <span class="pill-value" id="stat-amarillos">--</span>
+                    </div>
+                    <div class="stat-pill border-rojo" data-semaforo="ROJO">
+                        <span class="pill-label">Rojos</span>
+                        <span class="pill-value" id="stat-rojos">--</span>
+                    </div>
+                </div>
+
+                <!-- Spacer -->
+                <div class="metrics-spacer"></div>
+
+                <!-- Right: Operations & Filtering -->
+                <div class="control-group-right">
+                    <section class="launch-flow-block compact">
+                        <div class="flow-step active">Entrada</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">Revisión</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">Contacto</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">Diagnóstico</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">Cliente</div>
+                    </section>
+
+                    <section class="filters-bar-compact">
+                        <select id="filter-urgencia" aria-label="Urgencia">
+                            <option value="all">Urgencia: Todas</option>
+                            <option value="Esta semana">Esta semana</option>
+                            <option value="Este mes">Este mes</option>
+                            <option value="Solo explorando">Solo explorando</option>
+                        </select>
+                        <select id="filter-idioma" aria-label="Idioma">
+                            <option value="all">Idioma: Todos</option>
+                            <option value="Español">Español</option>
+                            <option value="Ucraniano">Ucraniano</option>
+                            <option value="Inglés">Inglés</option>
+                        </select>
+                        <select id="filter-caso" aria-label="Duda">
+                            <option value="all">Duda: Todas</option>
+                            <option value="Alta autónomo">Alta autónomo</option>
+                            <option value="Impuestos">Impuestos</option>
+                            <option value="Residencia + fiscalidad">Residencia + fiscalidad</option>
+                            <option value="Ingresos del extranjero">Ingresos del extranjero</option>
+                            <option value="Trazabilidad">Trazabilidad</option>
+                            <option value="Pluriactividad">Pluriactividad</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </section>
+                </div>
+            </section>
+
+            <!-- Pipeline Canvas (Operational) -->
+            <div id="pipeline-canvas" class="pipeline-canvas">
+                <!-- Dynamic columns from app.js -->
+            </div>
+        </main>
+
+        <!-- Lead Detail Drawer (Diagnostic Card) -->
+        <div id="lead-drawer" class="drawer hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-lead-name">
+            <div class="drawer-overlay"></div>
+            <div class="drawer-content">
+                <div class="drawer-header">
+                    <div class="drawer-header-top">
+                        <div class="header-tags">
+                            <span class="lead-id-tag" id="drawer-lead-id">NC-L-XXXX</span>
+                            <span class="canal-tag" id="drawer-canal-entrada">Canal</span>
+                        </div>
+                        <button class="btn-close-drawer" aria-label="Cerrar">&times;</button>
+                    </div>
+                    <div class="drawer-header-main">
+                        <div class="drawer-title-row">
+                            <div class="drawer-title-group">
+                                <h3 id="drawer-lead-name" class="drawer-lead-name">Nombre</h3>
+                                <span id="drawer-lead-date" class="drawer-date">Fecha entrada</span>
+                            </div>
+                            <div class="drawer-actions-row">
+                                <select id="drawer-status-select" class="status-select-premium"
+                                    aria-label="Cambiar estado del lead">
+                                    <option value="NUEVO">Nuevo lead</option>
+                                    <option value="EN_REVISION">En revisión</option>
+                                    <option value="CONTACTADO">Contactado</option>
+                                    <option value="DIAGNOSTICO_PROPUESTO">Diagnóstico propuesto</option>
+                                    <option value="CLIENTE">Clientes</option>
+                                    <option value="DESCARTADO">Rechazados</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="drawer-badges">
+                            <span id="drawer-lead-status" class="status-badge">--</span>
+                            <span id="drawer-lead-semaforo" class="semaforo-badge">--</span>
+                            <span id="drawer-lead-idioma" class="idioma-badge">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="drawer-body">
+                    <!-- Alertas de Riesgo o Consentimiento -->
+                    <div id="drawer-alerts-container"></div>
+
+                    <!-- Secciones dinámicas -->
+                    <div id="drawer-sections-container">
+                        <!-- Inyectado por app.js -->
+                    </div>
+                </div>
+
+                <div class="drawer-ia-alert">
+                    <span class="ia-icon">⚠️</span>
+                    <p><strong>La IA clasifica. NC decide.</strong> Sugerencia operativa no vinculante.</p>
+                </div>
+
+                <div class="drawer-footer">
+                    <div class="footer-actions">
+                        <button class="btn-action-outline" id="btn-copy-wa">WhatsApp Directo</button>
+                        <button class="btn-action-outline" id="btn-copy-mail">Enviar Email</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="sheets.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

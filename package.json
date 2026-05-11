@@ -1,0 +1,14 @@
+{
+  "name": "nc-control-tower",
+  "version": "1.0.0",
+  "description": "NC Control Tower Dashboard",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "googleapis": "^140.0.0",
+    "express": "^4.18.2"
+  }
+}

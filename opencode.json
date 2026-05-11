@@ -1,0 +1,36 @@
+﻿{
+    "$schema":  "https://opencode.ai/config.json",
+    "mcp":  {
+                "supabase":  {
+                                 "type":  "remote",
+                                 "url":  "https://mcp.supabase.com/mcp?project_ref=njzvqyovopcwfgwvnqli",
+                                 "oauth":  {
+
+                                           },
+                                 "enabled":  true
+                             },
+                "n8n-mcp":  {
+                                "type":  "remote",
+                                "url":  "https://n8n-nc-n8n.wmd3t3.easypanel.host/mcp-server/http",
+                                "headers":  {
+                                                "Authorization":  "Bearer ${N8N_MCP_TOKEN}"
+                                            },
+                                "enabled":  true
+                            },
+                "n8n-mcp-bridge":  {
+                                        "type":  "local",
+                                        "command":  [
+                                                        "C:\\Program Files\\nodejs\\npx.cmd",
+                                                        "-y",
+                                                        "mcp-remote@latest",
+                                                        "https://n8n-nc-n8n.wmd3t3.easypanel.host/mcp-server/http",
+                                                        "--header",
+                                                        "Authorization: Bearer ${AUTH_TOKEN}"
+                                                    ],
+                                        "environment":  {
+                                                            "AUTH_TOKEN":  "${N8N_MCP_TOKEN}"
+                                                        },
+                                        "enabled":  true
+                            }
+            }
+}
