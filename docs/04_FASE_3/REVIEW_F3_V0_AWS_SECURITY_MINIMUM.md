@@ -80,5 +80,15 @@ Riesgos restantes:
 - Dashboard `8080` sigue accesible públicamente si no hay auth.
 - Producción abierta sigue bloqueada.
 - Pendiente proteger dashboard `8080` con Basic Auth o IP allowlist.
-- Pendiente revisar puertos `3000` y `22` abiertos a `0.0.0.0/0` en tarea separada.
+- Puerto `3000` (EasyPanel) queda abierto de forma consciente para gestión de n8n y entorno de pruebas.
+- `3000` se clasifica como riesgo aceptado temporal, no bloqueante para `AWS Controlled V0`.
+- `3000` no debe usarse para producción abierta ni para operar datos sensibles.
+- Puerto `22` abierto a `0.0.0.0/0` queda pendiente de revisión/endurecimiento en tarea separada.
 - Pendiente HTTPS/dominio antes de producción real.
+
+## Aclaración operativa sobre puerto 3000
+
+- Servicio asociado: EasyPanel (administración de entorno de laboratorio/pruebas).
+- Estado de riesgo: aceptado temporalmente para operación interna controlada V0.
+- Estado de bloqueo: no bloquea el hito `AWS Controlled V0`.
+- Restricción de uso: prohibido para producción abierta y para manejo de datos sensibles.
