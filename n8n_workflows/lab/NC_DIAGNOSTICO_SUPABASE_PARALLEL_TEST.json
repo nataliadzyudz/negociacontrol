@@ -682,7 +682,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://16.171.174.52:3001/api/intake/diagnostico",
+        "url": "http://16.171.174.52:8080/api/intake/diagnostico",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -694,7 +694,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ $json }}",
+        "jsonBody": "={{ { ...$json, Es_test: true, es_test: true, Canal_origen: 'n8n_bridge_controlled_test', canal_entrada: 'n8n_bridge_controlled_test' } }}",
         "options": {
           "response": {
             "response": {
@@ -714,7 +714,13 @@
       "name": "HTTP Supabase Intake",
       "continueOnFail": true,
       "notesInFlow": true,
-      "notes": "Envia lead normalizado al backend AWS para guardar en Supabase (modo paralelo a Google Sheets)."
+      "notes": "Envia lead normalizado al backend AWS via 8080/api para guardar en Supabase (paralelo a Google Sheets). Requiere credencial Basic Auth en n8n.",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "SET_IN_N8N_UI",
+          "name": "NC_DASHBOARD_BASIC_AUTH"
+        }
+      }
     }
   ],
   "pinData": {},
