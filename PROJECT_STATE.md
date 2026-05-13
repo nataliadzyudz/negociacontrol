@@ -5,15 +5,16 @@
 - Fase activa: `3_V0` (produccion controlada)
 - Estado operativo: `ACTIVO_CONTROLADO`
 - Produccion abierta: `NO`
-- Cadena validada: `Tally real -> n8n -> backend /api/leads -> Supabase -> revision interna`
+- Cadena validada DIAGNOSTICO: `Tally real -> n8n (normaliza datos, genera Lead_ID, Google Sheets inicial, reglas preIA, IA o ROJO_PREIA, Google Sheets final, payload final post-IA/post-ROJO_PREIA) -> backend /api/intake/diagnostico -> Supabase -> revision interna/dashboard`
 
 ## Estado tecnico resumido
 
-- Backend canonico: `PASS` (`/api/leads` operativo)
+- Backend canonico DIAGNOSTICO: `PASS` (`/api/intake/diagnostico` como puerta de entrada del contrato completo)
+- Backend `/api/leads`: `PASS` para alta simple/manual, operaciones basicas de dashboard y flujo no diagnostico
 - Persistencia Supabase: `PASS`
 - Hardening de secretos en repo/runtime: `PASS` (con evidencia en reviews)
 - n8n LAB runtime: `PASS`
-- Google Sheets LAB incidencia columnas: `RESUELTA`
+- Google Sheets LAB incidencia columnas: `RESUELTA` (se mantiene como espejo operativo/QA temporal)
 - RLS final en proveedor: `PENDIENTE`
 
 ## Pendientes reales (bloqueantes y no bloqueantes)

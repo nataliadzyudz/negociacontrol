@@ -8,9 +8,18 @@
 
 ## Objetivo operativo inmediato
 
-- Mantener cadena canonica: `Tally real -> n8n -> backend /api/leads -> Supabase -> revision interna`.
+- Mantener cadena canonica DIAGNOSTICO: `Tally real -> n8n (normaliza datos, genera Lead_ID, Google Sheets inicial, reglas preIA, IA o ROJO_PREIA, Google Sheets final, payload final post-IA/post-ROJO_PREIA) -> backend /api/intake/diagnostico -> Supabase -> revision interna`.
 - Operar en modo controlado con QA y rollback.
 - Evitar automatizacion sensible y campanas masivas.
+
+Reglas de operacion canonica:
+
+- Endpoint canonico DIAGNOSTICO: `POST /api/intake/diagnostico`.
+- `POST /api/leads`: alta simple/manual, operaciones basicas de dashboard y flujo no diagnostico.
+- Google Sheets: espejo operativo/QA temporal (no fuente final consolidada).
+- Supabase: destino estructurado principal para produccion controlada y base objetivo del dashboard.
+- n8n debe enviar al backend el payload final post-IA/post-ROJO_PREIA, no el payload inicial pre-IA.
+- Separacion obligatoria en dashboard: `Semaforo_final` (decision operativa), `Estado` (posicion en proceso), `Semaforo_IA` (informativo/auditoria), `Semaforo_preIA` (tecnico/reglas duras).
 
 ---
 

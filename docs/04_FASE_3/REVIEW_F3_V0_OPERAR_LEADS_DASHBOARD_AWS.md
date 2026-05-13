@@ -5,6 +5,17 @@
 - Fase: `FASE_3_PRODUCCION_CONTROLADA_V0_ACTIVA`
 - Resultado: `GO TECNICO CONTROLADO` (habilita piloto controlado con revision manual; no habilita produccion abierta)
 
+## Actualizacion canonica documental - 2026-05-13
+
+- Se cierra la doble verdad documental en F3_V0.
+- Endpoint canonico DIAGNOSTICO: `POST /api/intake/diagnostico`.
+- `/api/leads` queda para alta simple/manual/dashboard basico y flujo no diagnostico.
+- n8n debe enviar payload final post-IA/post-ROJO_PREIA al backend (no payload inicial pre-IA).
+- Google Sheets se mantiene como espejo operativo/QA temporal durante transicion.
+- Supabase se mantiene como destino estructurado principal (`leads`, `lead_triage`, `lead_status_history`).
+- Dashboard debe priorizar `Semaforo_final`, separar `Estado` y usar `Semaforo_IA` como dato informativo/auditoria (`Semaforo_preIA` tecnico/reglas duras).
+- Cualquier referencia previa que marque `/api/leads` como canonico DIAGNOSTICO o `/api/intake/diagnostico` como legacy/deuda activa queda: `Historico / superseded por actualizacion canonica 2026-05-13`.
+
 ## Archivos leidos
 
 - `AGENTS.md`
@@ -113,31 +124,31 @@ Interpretacion:
 - Resultado: `PASS` para backend canonico de dashboard.
 - Nota de QA: un intento inicial devolvio `500` con payload no canonico de prueba; no se reprodujo en payload minimo canonico de dashboard.
 - Archivos tocados en esta validacion: solo este review (sin cambios backend/n8n/supabase schema).
-- Riesgos pendientes: intake `POST /api/intake/diagnostico` continua en investigacion separada.
+- Riesgos pendientes: [Historico / superseded por actualizacion canonica 2026-05-13] intake `POST /api/intake/diagnostico` figuraba en investigacion separada.
 - Siguiente paso real: depurar endpoint de intake diagnostico sin activar n8n productivo.
 
-## Trazabilidad tecnica adicional (2026-05-12 · decision endpoint canonico n8n)
+## Trazabilidad tecnica adicional (2026-05-12 · decision endpoint canonico n8n) [Historico / superseded por actualizacion canonica 2026-05-13]
 
 - Objetivo: decidir endpoint canonico para `DIAGNOSTICO.json` sin activar n8n productivo.
 - Endpoints revisados:
-  - `POST /api/leads` (backend canonico validado)
-  - `POST /api/intake/diagnostico` (ruta alternativa legacy)
+  - `POST /api/leads` (backend canonico validado en ese momento historico)
+  - `POST /api/intake/diagnostico` ([Historico / superseded por actualizacion canonica 2026-05-13] en ese momento se evaluo como ruta alternativa)
 - Pruebas aisladas por `:8080/api`:
   - `POST /api/intake/diagnostico` con payload legacy (`Lead_ID`, `Nombre_y_apellidos`, `Email`, `WhatsApp`) -> `201` PASS (`lead_code=L-INTAKE-TEST-1`).
   - `POST /api/intake/diagnostico` con payload canonico (`lead_code`, `nombre`, `email`, `whatsapp`) -> `500` FAIL (sin insercion observada para `NC-INTAKE-CANON-1`).
 - Evidencia DB (Supabase):
   - Existe `L-INTAKE-TEST-1`.
   - No existe `NC-INTAKE-CANON-1`.
-- Decision tecnica: endpoint canonico para integracion n8n = `POST /api/leads`.
+- Decision tecnica: [Historico / superseded por actualizacion canonica 2026-05-13] endpoint canonico para integracion n8n = `POST /api/leads`.
 - Justificacion: menor riesgo, menor cambio, reutiliza la ruta ya validada E2E y evita duplicar logica con intake legacy.
-- Estado de `POST /api/intake/diagnostico`: no canonico para el siguiente paso; queda PENDIENTE de hardening si se mantiene por compatibilidad historica.
-- Siguiente paso real: preparar prueba controlada de `DIAGNOSTICO.json` en modo test apuntando a `POST /api/leads`.
+- Estado de `POST /api/intake/diagnostico`: [Historico / superseded por actualizacion canonica 2026-05-13] se clasifico como no canonico en esa fecha.
+- Siguiente paso real: [Historico / superseded por actualizacion canonica 2026-05-13] se propuso prueba en modo test apuntando a `POST /api/leads`.
 
-## Trazabilidad tecnica adicional (2026-05-12 · n8n lab hacia endpoint canonico)
+## Trazabilidad tecnica adicional (2026-05-12 · n8n lab hacia endpoint canonico) [Historico / superseded por actualizacion canonica 2026-05-13]
 
 - Objetivo: validar cadena controlada `DIAGNOSTICO (copia lab/export) -> POST /api/leads -> Supabase` sin activar n8n productivo.
 - Workflow/copia revisada: `n8n_workflows/DIAGNOSTICO_CANDIDATE_CONTROLLED_TEST.json`.
-- Endpoint usado: `POST http://16.171.174.52:8080/api/leads` (canónico).
+- Endpoint usado: [Historico / superseded por actualizacion canonica 2026-05-13] `POST http://16.171.174.52:8080/api/leads`.
 - Mapping aplicado en nodo HTTP de la copia:
   - `Nombre_y_apellidos -> nombre`
   - `Email -> email`
@@ -154,12 +165,12 @@ Interpretacion:
   - `lead_code` creado: `NC-L-96794439`.
 - Evidencia Supabase:
   - Registro presente en `public.leads` con `es_test=true` y `canal_entrada=diagnostico_n8n_lab_test`.
-- Resultado: `PASS` (backend canónico y persistencia confirmados para integración n8n en modo test).
+- Resultado: `PASS` (evidencia historica de integracion n8n en modo test; contrato canonico DIAGNOSTICO actualizado el 2026-05-13).
 - Restricciones cumplidas:
   - no activación de n8n productivo,
   - no uso de `/api/intake/diagnostico` en esta validación,
   - no escritura directa desde n8n a Supabase.
-- Siguiente paso real: ejecutar prueba manual del workflow candidato en n8n lab/importado y validar `201` real en nodo HTTP con el mismo contrato canónico.
+- Siguiente paso real: [Historico / superseded por actualizacion canonica 2026-05-13] se propuso validar `201` en nodo HTTP con el contrato vigente en esa fecha.
 
 ## Decision operativa de orquestacion (2026-05-12)
 
@@ -207,7 +218,7 @@ Interpretacion:
 
 ## Trazabilidad tecnica adicional (2026-05-12 · cierre runtime n8n LAB)
 
-- Objetivo: cerrar evidencia real de la cadena `n8n LAB runtime -> /api/leads -> backend -> Supabase` sin tocar productivo.
+- Objetivo: [Historico / superseded por actualizacion canonica 2026-05-13] cerrar evidencia real de la cadena `n8n LAB runtime -> /api/leads -> backend -> Supabase` sin tocar productivo.
 - Workflow LAB: `NC_DIAGNOSTICO_CANDIDATE_CONTROLLED_TEST_LAB` (runtime ID `ttgStMBTSmQKdGrF`).
 - Nodo validado: `HTTP Supabase Intake`.
 - Evidencia n8n (runtime UI):
@@ -222,7 +233,7 @@ Interpretacion:
   - registro encontrado con el mismo `id`, `lead_code` y `email`
   - `es_test=true`
   - `canal_entrada=diagnostico_n8n_lab_test`
-- Resultado: `PASS` para la cadena canonica n8n LAB -> backend -> Supabase.
+- Resultado: `PASS` para la cadena validada en ese momento (Historico / superseded por actualizacion canonica 2026-05-13 para DIAGNOSTICO).
 - Incidencia separada no bloqueante:
   - nodo: `Append row in sheet1`
   - error: `Column names were updated after the node's setup`
@@ -231,7 +242,7 @@ Interpretacion:
   - no activacion/modificacion de workflow productivo,
   - no uso de `/api/intake/diagnostico`,
   - no escritura directa n8n -> Supabase.
-- Siguiente paso real: tratar el error de Google Sheets como deuda separada sin alterar la ruta canonica ya validada.
+- Siguiente paso real: tratar el error de Google Sheets como deuda separada sin alterar la ruta activa definida por la actualizacion canonica 2026-05-13.
 
 ## Trazabilidad tecnica adicional (2026-05-13 · hardening secretos repo)
 
@@ -301,7 +312,7 @@ Interpretacion:
 - Ejecucion: `executionId=222` (modo test/manual LAB).
 - Resultado nodos clave:
   - `Append row in sheet1`: PASS (sin error de columnas desactualizadas).
-  - `HTTP Supabase Intake`: PASS manteniendo ruta canonica `POST /api/leads`.
+  - `HTTP Supabase Intake`: PASS manteniendo ruta de esa validacion historica (`POST /api/leads`) [Historico / superseded por actualizacion canonica 2026-05-13 para DIAGNOSTICO].
 - Evidencia backend/Supabase:
   - `id=19e7ad97-ef3b-4923-a22d-39cc2da1026b`
   - `lead_code=NC-L-35870163`
@@ -323,14 +334,14 @@ Interpretacion:
 - Prueba controlada ejecutada:
   - origen: formulario real de Tally (datos sinteticos),
   - `executionId=223` en n8n,
-  - cadena operativa: `Tally real -> webhook productivo controlado -> n8n operativo -> backend POST /api/leads -> Supabase public.leads -> revision interna`.
+  - cadena operativa: [Historico / superseded por actualizacion canonica 2026-05-13 para DIAGNOSTICO] `Tally real -> webhook productivo controlado -> n8n operativo -> backend POST /api/leads -> Supabase public.leads -> revision interna`.
 - Evidencia de persistencia en Supabase (`public.leads`):
   - `lead_code=NC-L-36990829`
   - `email=tally.real.controlled.test@example.com`
   - `nombre=Lead Test Tally Real Controlled`
   - `fecha_entrada=2026-05-13 01:49:51.453683+00`
 - Verificaciones de gobierno:
-  - backend canonico se mantiene en `POST /api/leads` (PASS),
+  - backend canonico se mantiene en `POST /api/leads` para flujo no diagnostico/dashboard (PASS),
   - sin evidencia de escritura directa n8n -> Supabase (PASS),
   - prueba sintetica/controlada (PASS),
   - sin activacion de campana publica (PASS),
@@ -348,6 +359,28 @@ Interpretacion:
 - Riesgos residuales:
   - endpoint backend publico en V0 sin auth de aplicacion dedicada,
   - dependencia operativa de disciplina manual en revision interna,
-  - deuda legacy de `/api/intake/diagnostico` fuera de la ruta canonica.
+  - [Historico / superseded por actualizacion canonica 2026-05-13] deuda legacy de `/api/intake/diagnostico` queda cerrada por decision canonica vigente.
 - Siguiente paso real:
   - iniciar `piloto controlado` con cupo limitado y seguimiento diario en dashboard/revision interna.
+
+## Trazabilidad tecnica adicional (2026-05-13 · mejora UI dashboard + contrato operativo piloto)
+
+- Objetivo: mejorar legibilidad operativa del dashboard para leads reales en piloto controlado, sin tocar backend productivo ni activar workflows productivos.
+- Archivos modificados:
+  - `public/app.js`
+  - `public/styles.css`
+- Cambios aplicados UI:
+  - cards de lead con metadatos operativos visibles: `Estado`, badge `TEST`, `Canal`.
+  - ficha lead con bloque `Snapshot operativo` que separa y muestra `Semaforo IA` vs `Estado operativo`.
+  - ampliacion de bloque IA para exponer claramente: `Tipo_lead_IA`, `Riesgo_detectado`, `Tipo_riesgo`, `Dato_faltante`, `Accion_recomendada`, `Siguiente_accion`, `Respuesta_sugerida`, `Requiere_revision`.
+- Contrato n8n revisado (read-only):
+  - `DIAGNOSTICO.json` apunta a `/api/intake/diagnostico` (alineado con el endpoint canonico DIAGNOSTICO vigente).
+  - `DIAGNOSTICO_CANDIDATE_CONTROLLED_TEST.json` apunta a `/api/leads` (Historico / superseded para DIAGNOSTICO por actualizacion canonica 2026-05-13) con `es_test=true` y `canal_entrada=diagnostico_n8n_lab_test`.
+- Pruebas ejecutadas:
+  - `node --check public/app.js` -> PASS.
+  - smoke `GET http://16.171.174.52:8080/api/leads` -> `401` (endpoint protegido por auth en gateway canónico); no bloquea validacion de sintaxis/UI local.
+- Seguridad y alcance:
+  - sin cambios en `backend`, `Supabase schema`, `credenciales` o `.env`.
+  - sin activacion ni modificacion de workflow n8n productivo.
+  - sin exposicion de secretos.
+- Resultado de esta iteracion: `PASS` para mejora UI/contrato documental operativo; smoke funcional autenticado queda `PENDIENTE` segun disponibilidad de acceso seguro.

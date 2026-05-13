@@ -12,15 +12,22 @@ Ejecutar la siguiente tarea tecnica de Fase 3 V0 sin improvisacion, con orquesta
 
 ## Contexto validado
 
-- Cadena canonica validada: `Tally real -> webhook controlado -> n8n -> POST /api/leads -> Supabase public.leads -> revision interna`.
+- Cadena canonica validada DIAGNOSTICO: `Tally real -> webhook controlado -> n8n (normaliza datos, genera Lead_ID, Google Sheets inicial, reglas preIA, IA o ROJO_PREIA, Google Sheets final) -> envio de payload final post-IA/post-ROJO_PREIA -> POST /api/intake/diagnostico -> Supabase (leads, lead_triage, lead_status_history) -> revision interna/dashboard`.
 - Evidencia final registrada:
   - `executionId=223`
   - `lead_code=NC-L-36990829`
   - `email=tally.real.controlled.test@example.com`
   - `nombre=Lead Test Tally Real Controlled`
   - `fecha_entrada=2026-05-13 01:49:51.453683+00`
-- Endpoint canonico de entrada backend: `POST /api/leads`.
-- `/api/intake/diagnostico` queda como legacy/deuda no canonica.
+- Endpoint canonico de entrada backend para DIAGNOSTICO: `POST /api/intake/diagnostico`.
+- `/api/leads` queda para alta simple/manual, operaciones basicas de dashboard y flujo no diagnostico.
+- Google Sheets se mantiene como espejo operativo/QA temporal durante transicion (no fuente final consolidada).
+- Supabase se mantiene como destino estructurado principal del flujo.
+- Separacion operativa obligatoria en dashboard y contrato:
+  - `Semaforo_final` = decision operativa principal de encaje/riesgo.
+  - `Estado` = posicion del lead en el proceso.
+  - `Semaforo_IA` = dato informativo/auditoria.
+  - `Semaforo_preIA` = dato tecnico/reglas duras.
 - No hay evidencia aprobada de escritura directa `n8n -> Supabase`.
 
 ## Subagentes obligatorios (Agent Supervisor)
@@ -95,7 +102,7 @@ Ejecutar la siguiente tarea tecnica de Fase 3 V0 sin improvisacion, con orquesta
 ## Pruebas minimas obligatorias (para cada siguiente tarea tecnica)
 
 1. Verificacion de alcance contra `READ_SET/WRITE_SET/DO_NOT_TOUCH`.
-2. Verificacion de cadena canonica (si la tarea toca flujo de leads): `POST /api/leads` como puerta.
+2. Verificacion de cadena canonica DIAGNOSTICO (si la tarea toca flujo diagnostico): `POST /api/intake/diagnostico` como puerta y envio de payload final post-IA/post-ROJO_PREIA.
 3. Verificacion de no regresion de seguridad (sin secretos expuestos).
 4. Verificacion documental de cierre: evidencia suficiente en review/spec.
 

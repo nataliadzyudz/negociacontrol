@@ -45,7 +45,7 @@ Fase 3_V0 significa:
 
 ```text
 Produccion controlada (no produccion abierta).
-Cadena canonica: Tally real controlado -> n8n -> backend /api/leads -> Supabase -> revision interna.
+Cadena canonica DIAGNOSTICO: Tally real controlado -> n8n (normaliza datos, genera Lead_ID, escribe Google Sheets inicial, ejecuta reglas preIA, ejecuta IA o rama ROJO_PREIA, actualiza Google Sheets final, envia payload final post-IA/post-ROJO_PREIA) -> backend POST /api/intake/diagnostico -> Supabase (leads, lead_triage, lead_status_history) -> dashboard operativo/revision interna.
 Operacion con trazabilidad, QA y rollback.
 Sin automatizacion sensible.
 Con validacion humana obligatoria.
@@ -61,6 +61,21 @@ El backend valida.
 Supabase guarda.
 n8n automatiza.
 El dashboard visualiza/opera segÃºn fase.
+```
+
+Reglas canonicas DIAGNOSTICO F3_V0:
+
+```text
+/api/intake/diagnostico = endpoint canonico del flujo DIAGNOSTICO.
+/api/leads = alta simple/manual, operaciones basicas de dashboard y flujo no diagnostico.
+Google Sheets = espejo operativo/QA temporal durante transicion (no fuente final consolidada).
+Supabase = destino estructurado principal y base objetivo del dashboard operativo.
+Dashboard opera con separacion explicita:
+- Semaforo_final = decision operativa principal de encaje/riesgo.
+- Estado = posicion del lead en el proceso.
+- Semaforo_IA = dato informativo/auditoria.
+- Semaforo_preIA = dato tecnico/reglas duras.
+Prohibido mezclar semaforo con estado operativo.
 ```
 
 Nota de gobernanza:
@@ -319,7 +334,7 @@ Reglas especÃ­ficas:
 
 ```text
 n8n productivo queda congelado en Fase 2B.
-Google Sheets queda congelado en Fase 2B.
+Google Sheets no es fuente final desde Fase 2B; en F3_V0 se permite solo como espejo operativo/QA temporal cuando la TASK_SPEC lo explicite.
 server.js, sheets.js y package.json son legado/read-only salvo TASK_SPEC explÃ­cita.
 _archivo_DO_NOT_READ no se lee nunca.
 ```
