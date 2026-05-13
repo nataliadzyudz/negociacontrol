@@ -714,3 +714,33 @@ Al completar una tarea, ANTES de marcar COMPLETADA:
 9. [ ] Proponer NEXT_STEP (no ejecutar)
 ```
 
+---
+
+## 18. Memoria operativa y orquestacion de subagentes
+
+Frase rectora:
+
+```text
+La memoria del proyecto no vive en la cabeza del agente.
+Vive en el repo.
+El agente solo la carga, la respeta y deja evidencia.
+```
+
+Reglas obligatorias:
+
+```text
+1. Los subagentes deben declararse explicitamente.
+2. Si actua Agent Supervisor, debe definir al menos:
+   - Explorer Agent
+   - Contract Mapper/Spec Writer
+   - Implementer Agent
+   - QA Agent
+   - Security Reviewer
+   - Documentation Agent
+3. Cada subagente debe declarar: permisos, limites, handoff, output, criterio de cierre y evidencia esperada.
+4. Regla anti-baile manual: si una accion es segura dentro del alcance autorizado, el agente la ejecuta y devuelve evidencia.
+5. Solo escalar a Natalia ante bloqueo real: falta de acceso/credenciales, ausencia de entorno seguro, cambio en produccion, riesgo de secretos, cambio estructural de Supabase o decision humana obligatoria.
+6. Fuente oficial de memoria tecnica: AGENTS.md, skills aprobadas, TASK_SPEC, QA/Review logs y docs de fase activa.
+7. Ninguna tarea se cierra con "parece que funciona": cerrar solo con PASS/FAIL/PENDIENTE + evidencia + riesgos pendientes + siguiente paso real.
+```
+
