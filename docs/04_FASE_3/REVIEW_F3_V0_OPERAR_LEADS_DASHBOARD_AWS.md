@@ -293,3 +293,26 @@ Interpretacion:
   - sin impresion/versionado de secretos,
   - n8n/workflows productivos no tocados,
   - sin uso de `/api/intake/diagnostico`.
+
+## Trazabilidad tecnica adicional (2026-05-13 · cierre incidencia Google Sheets LAB)
+
+- Objetivo: cerrar QA de la incidencia `Append row in sheet1` en workflow LAB tras refresh de columnas.
+- Workflow: `NC_DIAGNOSTICO_CANDIDATE_CONTROLLED_TEST_LAB`.
+- Ejecucion: `executionId=222` (modo test/manual LAB).
+- Resultado nodos clave:
+  - `Append row in sheet1`: PASS (sin error de columnas desactualizadas).
+  - `HTTP Supabase Intake`: PASS manteniendo ruta canonica `POST /api/leads`.
+- Evidencia backend/Supabase:
+  - `id=19e7ad97-ef3b-4923-a22d-39cc2da1026b`
+  - `lead_code=NC-L-35870163`
+  - `email=sheets.lab.test@example.com`
+  - `es_test=true`
+  - `canal_entrada=diagnostico_n8n_lab_test`
+- Estado de incidencia original:
+  - `Column names were updated after the node's setup` -> RESUELTA en LAB.
+- Seguridad mantenida:
+  - Publish no usado,
+  - workflow productivo no tocado,
+  - backend no tocado,
+  - schema/RLS Supabase no tocado,
+  - sin uso de `/api/intake/diagnostico`.
