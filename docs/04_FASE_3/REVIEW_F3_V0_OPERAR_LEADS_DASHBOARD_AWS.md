@@ -3,7 +3,7 @@
 ## Estado
 
 - Fase: `FASE_3_PRODUCCION_CONTROLADA_V0_ACTIVA`
-- Resultado: `CORREGIR ANTES DE USO INTERNO` (pendiente validar flujos write en entorno con backend actualizado y variables correctas)
+- Resultado: `GO TECNICO CONTROLADO` (habilita piloto controlado con revision manual; no habilita produccion abierta)
 
 ## Archivos leidos
 
@@ -316,3 +316,38 @@ Interpretacion:
   - backend no tocado,
   - schema/RLS Supabase no tocado,
   - sin uso de `/api/intake/diagnostico`.
+
+## Trazabilidad tecnica adicional (2026-05-13 · evidencia final Tally real y cierre GO/NO-GO MVP cloud controlado)
+
+- Objetivo: cerrar GO/NO-GO tecnico del MVP cloud controlado con evidencia de lead real (sintetico) originado desde Tally real.
+- Prueba controlada ejecutada:
+  - origen: formulario real de Tally (datos sinteticos),
+  - `executionId=223` en n8n,
+  - cadena operativa: `Tally real -> webhook productivo controlado -> n8n operativo -> backend POST /api/leads -> Supabase public.leads -> revision interna`.
+- Evidencia de persistencia en Supabase (`public.leads`):
+  - `lead_code=NC-L-36990829`
+  - `email=tally.real.controlled.test@example.com`
+  - `nombre=Lead Test Tally Real Controlled`
+  - `fecha_entrada=2026-05-13 01:49:51.453683+00`
+- Verificaciones de gobierno:
+  - backend canonico se mantiene en `POST /api/leads` (PASS),
+  - sin evidencia de escritura directa n8n -> Supabase (PASS),
+  - prueba sintetica/controlada (PASS),
+  - sin activacion de campana publica (PASS),
+  - revision interna permanece obligatoria para operacion (PASS).
+- Decision de cierre MVP cloud controlado:
+  - `GO` para `piloto controlado` con guardrails vigentes.
+  - No habilita produccion abierta ni automatizacion masiva sin control humano.
+- Condiciones activas del GO:
+  - piloto limitado,
+  - revision manual obligatoria,
+  - sin campanas masivas,
+  - sin respuestas automaticas definitivas sin control,
+  - monitoreo diario,
+  - rollback definido.
+- Riesgos residuales:
+  - endpoint backend publico en V0 sin auth de aplicacion dedicada,
+  - dependencia operativa de disciplina manual en revision interna,
+  - deuda legacy de `/api/intake/diagnostico` fuera de la ruta canonica.
+- Siguiente paso real:
+  - iniciar `piloto controlado` con cupo limitado y seguimiento diario en dashboard/revision interna.

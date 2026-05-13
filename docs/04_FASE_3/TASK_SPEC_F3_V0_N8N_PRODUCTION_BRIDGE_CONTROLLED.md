@@ -1,133 +1,188 @@
 # TASK_SPEC_F3_V0_N8N_PRODUCTION_BRIDGE_CONTROLLED
 
-## Objetivo
+## Estado
 
-Preparar un puente controlado entre `n8n_workflows/DIAGNOSTICO.json` y backend NC Control Tower (`POST /api/intake/diagnostico`) sin activar producción, sin modificar workflow real y sin tocar credenciales.
+- Estado actual: `PASS` (evidencia runtime y persistencia cerradas)
+- Canonica para continuidad V0: `SI`
+- Documento de evidencia vinculado: `docs/04_FASE_3/REVIEW_F3_V0_OPERAR_LEADS_DASHBOARD_AWS.md`
 
-## Diagnóstico del workflow real
+## Objetivo operativo inmediato
 
-Fuente principal revisada:
-- `n8n_workflows/DIAGNOSTICO.json`
-- Referencia obligatoria lab: `n8n_workflows/lab/NC_DIAGNOSTICO_SUPABASE_PARALLEL_TEST.json`
+Ejecutar la siguiente tarea tecnica de Fase 3 V0 sin improvisacion, con orquestacion explicita de subagentes, manteniendo operacion en modo piloto controlado y sin abrir produccion publica.
 
-Flujo actual (`DIAGNOSTICO.json`):
-1. `Webhook` (`POST`, path `ba45c6a8-a03c-4149-a0da-ec64be1751c6`).
-2. `Code in JavaScript` normaliza payload y construye campos NC.
-3. `Append row in sheet1` (Google Sheets).
-4. `IF ROJO_PREIA` bifurca entre preclasificación roja o LLM.
-5. `Basic LLM Chain` + `Traductor IA a Sheets`.
-6. `Update row in sheet` (Google Sheets, campos IA).
-7. `AVISO INTERNO - CONFIGURAR` (placeholder interno, sin envío al lead).
+## Contexto validado
 
-Observación clave:
-- El workflow real no tiene `HTTP Request` a backend/Supabase.
+- Cadena canonica validada: `Tally real -> webhook controlado -> n8n -> POST /api/leads -> Supabase public.leads -> revision interna`.
+- Evidencia final registrada:
+  - `executionId=223`
+  - `lead_code=NC-L-36990829`
+  - `email=tally.real.controlled.test@example.com`
+  - `nombre=Lead Test Tally Real Controlled`
+  - `fecha_entrada=2026-05-13 01:49:51.453683+00`
+- Endpoint canonico de entrada backend: `POST /api/leads`.
+- `/api/intake/diagnostico` queda como legacy/deuda no canonica.
+- No hay evidencia aprobada de escritura directa `n8n -> Supabase`.
 
-## Referencia técnica lab vs real
+## Subagentes obligatorios (Agent Supervisor)
 
-Workflow lab comparado:
-- `n8n_workflows/lab/NC_DIAGNOSTICO_SUPABASE_PARALLEL_TEST.json`
+1. `Explorer Agent`
+2. `Contract Mapper / Spec Writer`
+3. `Implementer Agent` (solo si la tarea lo requiere y esta en WRITE_SET)
+4. `QA Agent`
+5. `Security Reviewer`
+6. `Documentation Agent`
 
-Diferencia principal:
-- El lab añade nodo `HTTP Supabase Intake` (`n8n-nodes-base.httpRequest`) en paralelo desde `Code in JavaScript`.
+## Permisos, limites, handoff y evidencia por subagente
 
-Endpoint usado en lab:
-- `http://16.171.174.52:3001/api/intake/diagnostico`
+### 1) Explorer Agent
+- Permisos: lectura de documentos de fase y artefactos objetivo de la tarea.
+- Limites: no edita; no toca backend/n8n/supabase/credenciales.
+- Handoff: entrega mapa de archivos y dependencias exactas.
+- Output obligatorio: `FILES_TO_READ` y riesgos de contexto.
+- Cierre: `PASS/FAIL/PENDIENTE` con evidencia de rutas leidas.
 
-Endpoint objetivo controlado (actualizado para V0 seguro):
-- `http://16.171.174.52:8080/api/intake/diagnostico`
+### 2) Contract Mapper / Spec Writer
+- Permisos: actualizar solo TASK_SPEC/review autorizados.
+- Limites: sin cambios funcionales.
+- Handoff: contrato operativo final para Implementer/QA.
+- Output obligatorio: alcance, DO_NOT_TOUCH, pruebas, cierre y siguiente paso real.
+- Cierre: `PASS` cuando elimina ambiguedad documental.
 
-Payload enviado por lab:
-- `jsonBody: ={{ $json }}` (manda el objeto normalizado completo del nodo `Code in JavaScript`).
+### 3) Implementer Agent
+- Permisos: solo WRITE_SET explicito de la tarea activa.
+- Limites: fuera de WRITE_SET = bloqueo y escalado.
+- Handoff: diff minimo + trazabilidad de ejecucion.
+- Output obligatorio: `FILES_CHANGED`, rollback y evidencia tecnica.
+- Cierre: `PASS` solo con prueba ejecutada y evidencia verificable.
 
-Partes reutilizables del lab:
-- Nodo HTTP en paralelo al flujo Sheets.
-- `continueOnFail: true` para no romper flujo principal durante validación.
-- Timeout corto y respuesta completa para auditoría técnica.
+### 4) QA Agent
+- Permisos: pruebas read-only o de smoke permitidas por spec.
+- Limites: no inventar pruebas fuera de criterios de aceptacion.
+- Handoff: matriz `CA -> evidencia -> resultado`.
+- Output obligatorio: `PASS/FAIL/PENDIENTE` por criterio.
+- Cierre: `PASS` solo si todos los CA obligatorios cierran.
 
-Partes a corregir antes de usar como plantilla:
-- URL de `:3001` (ya no debe usarse públicamente).
-- Añadir marca forzada de validación (`es_test=true`) en la copia controlada.
-- Añadir trazabilidad explícita de respuesta HTTP (status/code/body reducido).
+### 5) Security Reviewer
+- Permisos: validacion de secretos, superficie expuesta y cumplimiento de bloqueos.
+- Limites: no imprimir secretos; no cambiar credenciales sin spec.
+- Handoff: riesgos residuales y decision de continuidad.
+- Output obligatorio: checklist de seguridad y hallazgos.
+- Cierre: `PASS` sin exposicion nueva ni violacion de alcance.
 
-## Mapa de campos (workflow -> backend)
+### 6) Documentation Agent
+- Permisos: actualizar review/spec de la tarea en curso.
+- Limites: no crear documentacion duplicada.
+- Handoff: cierre formal con evidencia y siguiente paso unico.
+- Output obligatorio: registro `PASS/FAIL/PENDIENTE`, riesgos, rollback.
+- Cierre: `PASS` cuando el repo queda como memoria suficiente para continuar.
 
-El backend en `POST /api/intake/diagnostico` acepta aliases del payload DIAGNOSTICO, por ejemplo:
-- `Nombre_y_apellidos` -> `nombre`
-- `Email` -> `email`
-- `WhatsApp` -> `whatsapp`
-- `Idioma` -> `idioma_preferido`
-- `Duda_principal` -> `duda_principal`
-- `Resumen_caso` -> `explicacion_caso`
-- `Urgencia` -> `urgencia`
-- `Consentimiento_valido` -> `consentimiento_valido`
-- `Semaforo_IA`/`Semaforo_preIA` -> triage semáforo
-- `Motivo_clasificacion` -> `motivo_clasificacion`
-- `Dato_faltante` -> `dato_critico_faltante`
-- `Riesgo_detectado` -> `riesgo_detectado`
-- `Accion_recomendada` -> `accion_recomendada`
-- `Canal_origen` -> `canal_entrada`
-- `Es_test` -> `es_test`
+## Tools permitidas y prohibidas
 
-Nota:
-- El backend también admite `data.*` y variantes `snake_case`/label para intake diagnóstico.
-
-## Gaps detectados
-
-1. **Endpoint desalineado en lab**: usa `:3001` en vez de `:8080/api`.
-2. **`es_test` no forzado**: depende del payload entrante; en validación debe quedar forzado.
-3. **Doble escritura**: paralelo Sheets + backend puede duplicar seguimiento operativo si no se etiqueta origen.
-4. **Riesgo duplicados**: `lead_code` puede colisionar si reintentos no controlados; backend devuelve 409 en duplicado.
-5. **Automatizaciones sensibles**: deben seguir OFF (sin WhatsApp/email automático).
-
-## Estrategia recomendada (bridge controlado)
-
-1. Mantener `DIAGNOSTICO.json` intacto.
-2. Crear copia controlada (nuevo workflow lab) basada en la referencia `NC_DIAGNOSTICO_SUPABASE_PARALLEL_TEST.json`.
-3. En la copia:
-   - Cambiar endpoint a `http://16.171.174.52:8080/api/intake/diagnostico`.
-   - Mantener ejecución paralela con Sheets solo como espejo temporal.
-   - Forzar `es_test=true` antes del nodo HTTP.
-   - Añadir tagging de origen (`canal_entrada=DIAGNOSTICO_WEBHOOK_LAB`).
-   - Mantener `continueOnFail=true` y registrar respuesta HTTP.
-4. No activar envíos automáticos a cliente (WhatsApp/email).
+- Permitidas: lectura documental, inspeccion git read-only, parches minimos en spec/review.
+- Prohibidas en esta spec base:
+  - modificar backend/frontend funcional,
+  - modificar n8n/workflows,
+  - modificar Supabase schema,
+  - tocar `.env`/credenciales,
+  - deploy/migraciones/activaciones productivas.
 
 ## Fuera de alcance
 
-- Modificar `n8n_workflows/DIAGNOSTICO.json` real.
-- Activar workflow productivo.
-- Cambiar credenciales n8n, `.env`, MCP o schema Supabase.
-- Cambios de AWS, nginx o backend en esta tarea.
+- Produccion abierta.
+- Campanas publicas o automatizacion masiva.
+- Cambios tecnicos no autorizados por TASK_SPEC puntual.
 
-## Criterios de aceptación
+## Pruebas minimas obligatorias (para cada siguiente tarea tecnica)
 
-CA-01: Existe propuesta de copia controlada sin tocar workflow real.
-CA-02: Endpoint propuesto usa `:8080/api/intake/diagnostico` (no `:3001`).
-CA-03: Mapeo de campos documentado y compatible con backend intake.
-CA-04: Riesgos de duplicado/doble escritura documentados con mitigación.
-CA-05: Automatizaciones sensibles explícitamente desactivadas.
+1. Verificacion de alcance contra `READ_SET/WRITE_SET/DO_NOT_TOUCH`.
+2. Verificacion de cadena canonica (si la tarea toca flujo de leads): `POST /api/leads` como puerta.
+3. Verificacion de no regresion de seguridad (sin secretos expuestos).
+4. Verificacion documental de cierre: evidencia suficiente en review/spec.
 
-## Pruebas propuestas (siguiente ejecución controlada)
+## Evidencias obligatorias
 
-1. Ejecutar copia lab con payload test.
-2. Verificar HTTP `201` en intake backend.
-3. Verificar persistencia en `leads`, `lead_status_history` y (si aplica) `lead_triage`.
-4. Confirmar que Sheets sigue recibiendo espejo sin bloquear flujo.
-5. Verificar que no se dispara WhatsApp/email automático.
+- `FILES_READ`
+- `FILES_CHANGED`
+- `ACCEPTANCE_CHECK` por criterio
+- `PASS/FAIL/PENDIENTE` final
+- riesgos residuales
+- rollback
+- un unico `NEXT_STEP` real
 
 ## Rollback
 
-- Si falla, desactivar copia lab y volver a operar solo con `DIAGNOSTICO.json` + Sheets.
-- No tocar real productivo ni credenciales.
+1. Revertir solo archivos documentales tocados por la tarea.
+2. Mantener sin cambios backend/n8n/supabase si no estaban en alcance.
+3. Reabrir estado de la tarea como `PENDIENTE` con causa y evidencia.
 
-## Go / No-Go
+## Criterio de cierre
 
-- **GO condicionado** para crear copia controlada de lab.
-- **NO-GO** para tocar o activar `DIAGNOSTICO.json` real en este paso.
+- `PASS`: criterios completos con evidencia verificable y sin violar limites.
+- `FAIL`: se ejecuto pero incumple criterios o rompe limites.
+- `PENDIENTE`: bloqueo real (acceso, credencial, riesgo o decision humana obligatoria) con accion minima de desbloqueo.
 
-## Siguiente paso recomendado
+## Riesgos
 
-Crear un TASK_SPEC de ejecución técnica para:
-1) clonar workflow a variante controlada,
-2) ajustar endpoint a `:8080/api/intake/diagnostico`,
-3) forzar `es_test=true`,
-4) ejecutar pruebas con payloads test y evidencia HTTP/DB.
+- deriva documental entre specs/reviews si no se mantiene una sola ruta canonica;
+- relajacion operativa que derive en cambios fuera de alcance;
+- confusion entre piloto controlado y produccion abierta.
+
+## Siguiente paso real
+
+Ejecutar la siguiente tarea tecnica de V0 solo con esta TASK_SPEC como contrato operativo base y registrar cierre con evidencia en el review correspondiente.
+
+## Plantilla operativa estandar de arranque (reutilizable)
+
+Principio rector:
+
+`El repo es la fuente oficial de memoria tecnica. El agente solo la carga, la respeta y deja evidencia.`
+
+Uso obligatorio para toda siguiente tarea tecnica:
+
+1. Declarar una `TAREA CONCRETA` antes de actuar.
+2. Leer obligatoriamente:
+   - `AGENTS.md`
+   - `PROJECT_STATE.md`
+   - `docs/04_FASE_3/TASK_SPEC_F3_V0_N8N_PRODUCTION_BRIDGE_CONTROLLED.md`
+   - `docs/04_FASE_3/REVIEW_F3_V0_OPERAR_LEADS_DASHBOARD_AWS.md`
+3. Declarar orquestacion explicita de subagentes:
+   - `Explorer Agent`
+   - `Contract Mapper / Spec Writer` (si aplica)
+   - `Implementer Agent` (solo con cambios autorizados)
+   - `QA Agent`
+   - `Security Reviewer`
+   - `Documentation Agent`
+4. Para cada subagente declarar: objetivo, permisos, limites, output esperado y criterio de cierre.
+5. Antes de ejecutar, publicar: `FILES_TO_READ`, `FILES_TO_CHANGE`, `PLAN`, `RISKS`, `ROLLBACK`, `DO_NOT_TOUCH`.
+6. Ejecutar solo dentro de `FILES_TO_CHANGE`.
+7. Si algo cae fuera de alcance autorizado, marcar `PENDIENTE` y escalar.
+8. Entregar QA obligatorio con matriz:
+
+| CA | Evidencia | Resultado |
+|---|---|---|
+
+9. Estados permitidos: `PASS`, `FAIL`, `PENDIENTE`.
+10. Prohibido cerrar con: `parece correcto`, `deberia funcionar`, `aparentemente`.
+11. Confirmar seguridad en todo cierre:
+   - secretos no expuestos,
+   - productivo no tocado salvo autorizacion expresa,
+   - campana publica no activada,
+   - rollback claro,
+   - revision humana mantenida.
+12. Si hay cambios o decision operativa, actualizar documentacion existente adecuada.
+13. Priorizar actualizacion en `docs/04_FASE_3/REVIEW_F3_V0_OPERAR_LEADS_DASHBOARD_AWS.md`.
+14. Registrar siempre: fecha, objetivo, archivos leidos, archivos cambiados, evidencia, resultado, riesgos residuales, rollback y `NEXT_STEP` unico.
+15. Formato final obligatorio de entrega:
+   - Resumen ejecutivo
+   - Orquestacion declarada
+   - FILES_TO_READ
+   - FILES_TO_CHANGE
+   - PLAN ejecutado
+   - Evidencias
+   - Acceptance Check
+   - Seguridad
+   - Documentacion actualizada
+   - Riesgos residuales
+   - Rollback
+   - Resultado final
+   - NEXT_STEP
