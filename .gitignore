@@ -37,6 +37,7 @@ temp/
 *.sql.gz
 *.tar.gz
 exports/
+n8n_workflows/*.backup.json
 *.bak
 *.backup
 

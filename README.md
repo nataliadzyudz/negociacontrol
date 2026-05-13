@@ -37,4 +37,4 @@ Tally
 - `docs/00_CANON/README.md`
 
 ## Nota sobre historico
-`docs/99_ARCHIVE` contiene material legacy/historico y no representa necesariamente la arquitectura activa.
+El material legacy/historico se conserva fuera de esta rama publica para mantener el repositorio claro para revision del curso.
