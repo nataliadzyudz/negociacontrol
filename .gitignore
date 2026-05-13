@@ -20,10 +20,28 @@ supabase/.temp/
 
 # SSH Keys
 *.pem
+*.key
+
+# Credentials and local secrets
+credentials*
 
 # Temp files and installers
 _temp/
+tmp/
+temp/
 *.msi
+*.local
+
+# Dumps, archives, exports and backups
+*.dump
+*.sql.gz
+*.tar.gz
+exports/
+*.bak
+*.backup
+
+# Log folders
+logs/
 
 # Legacy files (DO NOT TOUCH per AGENTS.md)
 server.js
