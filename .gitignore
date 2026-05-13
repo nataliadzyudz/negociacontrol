@@ -11,6 +11,8 @@ backend/node_modules/
 # Logs
 *.log
 *.err
+backend.log
+backend.err
 npm-debug.log*
 
 # Supabase local state
@@ -19,8 +21,9 @@ supabase/.temp/
 # SSH Keys
 *.pem
 
-# Temp files
+# Temp files and installers
 _temp/
+*.msi
 
 # Legacy files (DO NOT TOUCH per AGENTS.md)
 server.js
