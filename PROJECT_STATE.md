@@ -1,115 +1,73 @@
-# PROJECT_STATE.md
+# PROJECT_STATE: NC CRM / Control Tower v2
 
-**Última actualización:** 2026-05-11
+## Estado actual
+
+- Fase activa: `3_V0` (produccion controlada)
+- Estado operativo: `ACTIVO_CONTROLADO`
+- Produccion abierta: `NO`
+- Cadena validada: `Tally real -> n8n -> backend /api/leads -> Supabase -> revision interna`
+
+## Estado tecnico resumido
+
+- Backend canonico: `PASS` (`/api/leads` operativo)
+- Persistencia Supabase: `PASS`
+- Hardening de secretos en repo/runtime: `PASS` (con evidencia en reviews)
+- n8n LAB runtime: `PASS`
+- Google Sheets LAB incidencia columnas: `RESUELTA`
+- RLS final en proveedor: `PENDIENTE`
+
+## Pendientes reales (bloqueantes y no bloqueantes)
+
+### Bloqueante para madurez de seguridad
+
+- Aplicar y validar RLS final en entorno objetivo de Supabase, con smoke posterior.
+
+### No bloqueantes inmediatos
+
+- Consolidacion documental de legacy 2A/2C hacia canon vivo.
+- Separacion de deudas legacy en registro de decisiones.
 
 ---
 
-## Estado del Sistema (LIVE)
+## Estado del sistema (LIVE)
 
 | Componente | Host | Puerto | Estado | Phase |
-|-----------|------|--------|--------|-------|
-| Backend | 16.171.174.52 | 3001 | ✅ RUNNING | PHASE=2C |
-| Frontend | 16.171.174.52 | 8080 | ✅ RUNNING | - |
-| Nginx | 16.171.174.52 | 8080 | ✅ RUNNING | Proxy |
-| n8n | 16.171.174.52 | 5678 | ✅ RUNNING | Lab |
-| EasyPanel | 16.171.174.52 | 80, 443, 3000 | ✅ RUNNING | - |
-| Supabase | njzvqyovopcwfgwvnqli | - | ✅ CONNECTED | Test |
+|---|---|---|---|---|
+| Backend | 16.171.174.52 | 3001 | RUNNING | PHASE=3_V0 |
+| Frontend | 16.171.174.52 | 8080 | RUNNING | - |
+| n8n | 16.171.174.52 | 5678 | RUNNING | Lab/controlado |
+| Supabase | njzvqyovopcwfgwvnqli | - | CONNECTED | test/controlado |
 
 ---
 
-## Fases
+## Historial de fases
 
-| Fase | Estado | Fechas | Docs Folder | Notas |
-|------|--------|--------|-----------|-----------|
-| 1 | LEGACY | - | - | Sheets freeze |
-| 2A | COMPLETADA | 2026-05-05 | 01_FASE_2A | Test |
-| 2B | COMPLETADA | 2026-05-06 | 02_FASE_2B | Test |
-| 2C | ACTIVA | 2026-05-08 | 03_FASE_2C | 2C_CIERRE_CONTROLADO |
-| 3 | ACTIVA | 2026-05-11 | 04_FASE_3 | FASE_3_PRODUCCION_CONTROLADA_V0_ACTIVA |
-
-Interpretacion canonica del estado 2C:
-
-```text
-2C_CIERRE_CONTROLADO = pre-produccion condicionada.
-No produccion abierta hasta cierre de condiciones del Gate 2C_TO_3.
-```
+| Fase | Estado | Fecha cierre/activacion | Carpeta docs | Nota |
+|---|---|---|---|---|
+| 1 | LEGACY | - | - | Operacion inicial con Sheets |
+| 2A | COMPLETADA | 2026-05-05 | `docs/01_FASE_2A/` | Base backend/supabase lab |
+| 2B | COMPLETADA | 2026-05-06 | `docs/02_FASE_2B/` | Integracion intermedia |
+| 2C | COMPLETADA | 2026-05-08 | `docs/03_FASE_2C/` | Cierre controlado (legacy historico) |
+| 3_V0 | ACTIVA | 2026-05-11 | `docs/04_FASE_3/` | Produccion controlada, no abierta |
 
 ---
 
-## Puertos AWS (EC2 Security Group)
+## Regla de lectura obligatoria por tarea
 
-| Puerto | Servicio | Status |
-|--------|---------|--------|
-| 80 | EasyPanel/Traefik | ✅ |
-| 443 | HTTPS | ✅ |
-| 3000 | EasyPanel | ✅ |
-| 3001 | Backend | ✅ |
-| 5678 | n8n | ✅ |
-| 8080 | Frontend | ✅ |
+Antes de ejecutar cualquier tarea:
 
----
+1. Leer `AGENTS.md`.
+2. Leer `PROJECT_STATE.md`.
+3. Leer `docs/00_CANON/README.md`.
+4. Leer `TASK_SPEC` activa.
+5. Ejecutar solo dentro de `READ_SET/WRITE_SET/DO_NOT_TOUCH`.
 
-## Recursos (Referencias)
+## Regla de cierre minimo
 
-| Recurso | Referencia | Ubicación |
-|--------|------------|-----------|
-| AWS_IP | 16.171.174.52 | AWS Console |
-| AWS_REGION | eu-north-1 | - |
-| SSH_KEY | par_claves_nc.pem | ./par_claves_nc.pem |
-| AWS_SG | sg-0a6e33ad93fe8ad57 | AWS Console |
-| SUPABASE_PROJECT | njzvqyovopcwfgwvnqli | supabase.com |
-| MCP_CONFIG | MCP.md | ./MCP.md |
-| PROD_CHECKLIST | PRODUCCION_SEGURA_CHECKLIST.md | ./docs/04_FASE_3/PRODUCCION_SEGURA_CHECKLIST.md |
+Toda tarea debe cerrar con:
 
----
-
-## Tareas Pendientes (TODO)
-
-| ID | Tarea | Fase | Prioridad |
-|----|------|------|---------|
-| 1 | Migrar DIAGNOSTICO → Supabase | 2C→3 | ALTA |
-| 2 | Testing integrado DIAGNOSTICO | 3 | ALTA |
-
----
-
-## Historial de Gates
-
-| Gate | Fecha | Resultado |
-|------|-------|----------|
-| GATE_1_TO_2A | 2026-05-04 | APROBADO |
-| GATE_2A_TO_2B | 2026-05-05 | APROBADO |
-| GATE_2B_TO_2C | 2026-05-06 | APROBADO |
-| GATE_2C_TO_3 | 2026-05-08 | APROBADO_CONDICION (2C_CIERRE_CONTROLADO) |
-
-Nota operativa (2026-05-11):
-
-```text
-Se permite evaluacion de PRODUCCION_CONTROLADA_V0 en modo manual/controlado.
-No produccion abierta.
-MCP n8n permanece como deuda de automatizacion.
-Estado recomendado: APROBAR_CON_CONDICIONES para v0 manual/controlada.
-Decision Natalia: APROBAR_V0_CON_CONDICIONES.
-```
-
----
-
-## Checklist de Entrada (OBLIGATORIO)
-
-### Antes de ejecutar CUALQUIER tarea:
-
-- [ ] Leer PROJECT_STATE.md
-- [ ] Confirmar fase activa en sistema vs docs
-- [ ] Revisar índice de tareas - estado
-- [ ] Identificar dependencias
-- [ ] Verificar recursos (puertos, creds)
-- [ ] CONFIRMAR: TASK_SPEC existe
-- [ ] Si NO existe → PARAR → Crear SPEC primero
-- [ ] Si necesita más →.expand WRITE_SET
-
-### Después de completar tarea:
-
-- [ ] Tests ejecutados y pasando
-- [ ] Resultados registrados
-- [ ] PROJECT_STATE.md actualizado
-- [ ] Índice de fase actualizado
-- [ ] NEXT_STEP propuesto (no ejecutado)
+- `PASS/FAIL/PENDIENTE`
+- evidencia verificable
+- riesgos residuales
+- rollback
+- `NEXT_STEP` unico

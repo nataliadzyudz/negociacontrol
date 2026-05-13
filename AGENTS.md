@@ -1,8 +1,8 @@
-﻿# AGENTS.md â€” NC Control Tower v2 Â· Router mÃ­nimo spec-driven
+# AGENTS.md â€” NC Control Tower v2 Â· Router mÃ­nimo spec-driven
 
 **Proyecto:** NEGOCIA CONTROL â€” NC CRM / Control Tower v2  
 **Workspace local:** `<LOCAL_WORKSPACE_ROOT>`  
-**Fase activa documental:** `2C`.
+**Fase activa documental:** `3_V0`.
 **Regla de gobierno:** `process.env.PHASE` orienta runtime tecnico, pero no sustituye `PROJECT_STATE.md` ni este `AGENTS.md` para decisiones documentales.
 **Modo:** spec-driven Â· una tarea cada vez Â· contexto eficiente Â· MCP con lÃ­mites Â· skills bajo demanda.
 
@@ -38,23 +38,18 @@ Antes de cualquier acciÃ³n:
 ## 2. Fase activa
 
 ```text
-FASE_ACTIVA = 2C
+FASE_ACTIVA = 3_V0
 ```
 
-Fase 2C significa:
+Fase 3_V0 significa:
 
 ```text
-Dashboard operativo controlado en laboratorio.
-Backend + Supabase para operaciones de lead.
-Solo es_test=true.
-No producciÃ³n.
-No datos reales.
-No Google Sheets.
-No n8n productivo.
-No automatizaciÃ³n sensible.
-No specs ejecutables de Fase 3.
-No produccion abierta.
-Solo preparacion de Gate 2C_TO_3 cuando TASK_SPEC lo autoriza.
+Produccion controlada (no produccion abierta).
+Cadena canonica: Tally real controlado -> n8n -> backend /api/leads -> Supabase -> revision interna.
+Operacion con trazabilidad, QA y rollback.
+Sin automatizacion sensible.
+Con validacion humana obligatoria.
+Documentacion viva en docs/04_FASE_3 y docs/00_CANON.
 ```
 
 Principio rector NC:
@@ -68,7 +63,12 @@ n8n automatiza.
 El dashboard visualiza/opera segÃºn fase.
 ```
 
-En Fase 2C cualquier escritura debe ser controlada, test y autorizada por TASK_SPEC expresa.
+Nota de gobernanza:
+
+```text
+docs/03_FASE_2C queda como legacy operativo/historico.
+No usar 2C como autoridad de fase activa.
+```
 
 ---
 
@@ -77,13 +77,13 @@ En Fase 2C cualquier escritura debe ser controlada, test y autorizada por TASK_S
 ### Ãndice de tareas ejecutables de la fase activa
 
 ```text
-/docs/03_FASE_2C/specs/00_TASKS_FASE2C_INDEX.md
+/docs/04_FASE_3/
 ```
 
 ### Plantilla de TASK_SPEC
 
 ```text
-/docs/03_FASE_2C/specs/00_TASK_SPEC_TEMPLATE.md
+/docs/00_CANON/TASK_SPEC_TEMPLATE.md
 ```
 
 ### Roadmap vivo para futuro
@@ -156,12 +156,12 @@ Solo leer si la TASK_SPEC toca IA, n8n, triaje, `lead_triage` o mapeo `DIAGNOSTI
 ### Quick Start por Fase
 
 ```text
-/docs/03_FASE_2C/QUICK_START_FASE2C.md
+/docs/04_FASE_3/QUICK_START_FASE3.md
 ```
 
 **Regla:** Leer siempre antes de ejecutar una TASK de la fase activa. No sustituye la TASK_SPEC.
 
-### SOP operativo minimo 2C
+### Referencias legacy 2C (historico)
 
 ```text
 /docs/03_FASE_2C/SOP_OPERATIVO_TAREAS_2C.md
@@ -170,10 +170,10 @@ Solo leer si la TASK_SPEC toca IA, n8n, triaje, `lead_triage` o mapeo `DIAGNOSTI
 Uso:
 
 ```text
-Aplicar checklist de inicio/cierre y formato unico de entrega para toda TASK en 2C_CIERRE_CONTROLADO.
+Usar solo para contexto historico de cierre 2C, no como contrato activo de Fase 3_V0.
 ```
 
-### Logs minimos de trazabilidad 2C
+### Logs minimos de trazabilidad 2C (historico)
 
 ```text
 /docs/03_FASE_2C/MCP_STATUS.md
@@ -184,10 +184,10 @@ Aplicar checklist de inicio/cierre y formato unico de entrega para toda TASK en 
 Uso:
 
 ```text
-Registrar estado MCP, ejecuciones de agentes y deuda tecnica activa de cierre 2C.
+Consultar solo para trazabilidad historica.
 ```
 
-### Roles y handoffs de subagentes 2C
+### Roles y handoffs de subagentes 2C (historico)
 
 ```text
 /docs/03_FASE_2C/AGENT_ROLES_AND_HANDOFFS_2C.md
@@ -196,10 +196,10 @@ Registrar estado MCP, ejecuciones de agentes y deuda tecnica activa de cierre 2C
 Uso:
 
 ```text
-Aplicar matriz de responsabilidades, limites y handoffs en tareas de 2C_CIERRE_CONTROLADO.
+Referencia historica. El marco activo de subagentes vive en TASK_SPEC activa y canon vigente.
 ```
 
-### Canon documental referencial 2C
+### Canon documental referencial 2C (historico)
 
 ```text
 /docs/03_FASE_2C/CANON_DOCUMENTAL_REFERENCIAL_2C.md
@@ -208,7 +208,19 @@ Aplicar matriz de responsabilidades, limites y handoffs en tareas de 2C_CIERRE_C
 Uso:
 
 ```text
-Aplicar jerarquia de documentos y alias canonicos para evitar divergencias de nombre/ruta.
+Referencia historica. La autoridad documental vigente de fase activa se resuelve en `docs/00_CANON/README.md`.
+```
+
+### Canon documental vigente (fase activa)
+
+```text
+/docs/00_CANON/README.md
+```
+
+Uso:
+
+```text
+Resolver autoridad documental actual y clasificar vivo vs legacy sin mover ni borrar documentos.
 ```
 
 ---
@@ -260,7 +272,7 @@ Antes de concluir que un componente "no existe":
 4. Revisar docs futuros (02/03/04) para contexto
 ```
 
-Durante cierre documental de Fase 2C pueden crearse si faltan:
+Durante cierre documental de Fase 2C (historico) podian crearse si faltaban:
 
 ```text
 /supabase/
@@ -416,7 +428,7 @@ CONDITIONAL_READ_SET es bajo demanda.
 Regla unica para indice de fase:
 
 ```text
-Leer 00_TASKS_FASE2C_INDEX.md solo para elegir siguiente tarea, verificar orden o actualizar progreso.
+Leer docs/04_FASE_3/ solo para elegir siguiente tarea, verificar orden o actualizar progreso.
 ```
 
 Antes de modificar, informa:
@@ -743,4 +755,41 @@ Reglas obligatorias:
 6. Fuente oficial de memoria tecnica: AGENTS.md, skills aprobadas, TASK_SPEC, QA/Review logs y docs de fase activa.
 7. Ninguna tarea se cierra con "parece que funciona": cerrar solo con PASS/FAIL/PENDIENTE + evidencia + riesgos pendientes + siguiente paso real.
 ```
+
+---
+
+## 19. REGLA DE EFICIENCIA Y GESTIÃ“N DE RECURSOS NC
+
+NC no optimiza para â€œlo mÃ¡s sofisticadoâ€ . NC optimiza para:
+- mÃ­nimo coste
+- mÃ­nimo riesgo
+- mÃ¡xima claridad
+- mÃ¡ximo reaprovechamiento
+- mÃ­nima dependencia externa
+- mantenimiento sencillo
+- avance real hacia producciÃ³n
+
+**Regla principal:**
+Si existen dos soluciones vÃ¡lidas, elegir la mÃ¡s simple, barata, reversible y mantenible que consiga el resultado real.
+
+**Los agentes NO deben proponer:**
+- herramientas nuevas si las actuales sirven;
+- servicios cloud adicionales sin necesidad;
+- automatizaciones complejas antes de estabilizar V0;
+- arquitectura enterprise prematura;
+- CI/CD pesado sin necesidad real;
+- refactors grandes sin retorno claro;
+- â€œmodernizaciÃ³nâ€  sin impacto operativo.
+
+Toda propuesta tÃ©cnica relevante debe indicar:
+- coste estimado;
+- esfuerzo;
+- impacto operativo;
+- riesgo;
+- prioridad real;
+- si es imprescindible ahora o puede esperar.
+
+**Principio NC:**
+> â€œNo construir para impresionar. Construir para operar.â€ 
+
 
