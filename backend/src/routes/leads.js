@@ -9,6 +9,117 @@ function generateLeadCode() {
   return `NC-L-${stamp}`;
 }
 
+function pickFirst(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && value !== '') return value;
+  }
+  return null;
+}
+
+function toBool(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const v = value.trim().toUpperCase();
+    return ['SI', 'SÍ', 'YES', 'TRUE', '1'].includes(v);
+  }
+  return false;
+}
+
+function normalizeSemaforo(value) {
+  if (!value) return null;
+  const v = String(value).trim().toUpperCase();
+  return ['VERDE', 'AMARILLO', 'ROJO'].includes(v) ? v : null;
+}
+
+function normalizeEstadoOperativoDiagnostico(input) {
+  const hasErrorIA = toBool(input.error_ia) || toBool(input.Error_IA) || toBool(input.ia_json_valido === false) || String(input.ia_json_valido || input.IA_JSON_valido || '').trim().toUpperCase() === 'NO';
+  if (hasErrorIA) return 'ERROR_IA';
+
+  const riesgoDuro = toBool(input.riesgo_duro_detectado) || toBool(input.Riesgo_duro_detectado);
+  if (riesgoDuro) return 'PENDIENTE_REVISION';
+
+  const requiereRevision = toBool(input.requiere_revision_manual) || toBool(input.Requiere_revision_manual) || toBool(input.requiere_revision) || toBool(input.Requiere_revision);
+  if (requiereRevision) return 'PENDIENTE_REVISION';
+
+  const semaforoFinal = normalizeSemaforo(pickFirst(input.semaforo_final, input.Semaforo_final, input.semaforo_ia, input.Semaforo_IA, input.semaforo_preia, input.Semaforo_preIA));
+
+  if (semaforoFinal === 'ROJO') return 'PENDIENTE_REVISION';
+  if (semaforoFinal === 'AMARILLO') return 'FALTA_DATO';
+  if (semaforoFinal === 'VERDE') return 'APTO_DIAGNOSTICO';
+
+  return 'NUEVO';
+}
+
+function buildDiagnosticoLeadData(data) {
+  return {
+    lead_code: pickFirst(data.Lead_ID, data.lead_code, `DIAG-${Date.now()}`),
+    fecha_entrada: pickFirst(data.Fecha, data.fecha_entrada),
+    nombre: pickFirst(data.Nombre_y_apellidos, data.nombre, ''),
+    email: pickFirst(data.Email, data.email),
+    whatsapp: pickFirst(data.WhatsApp, data.whatsapp),
+    idioma_preferido: pickFirst(data.Idioma, data.idioma_preferido),
+    esta_en_espana: pickFirst(data.En_Espana, data.esta_en_espana),
+    situacion_actual: pickFirst(data.Situacion_actual, data.situacion_actual),
+    origen_ingresos: pickFirst(data.Origen_ingresos, data.origen_ingresos),
+    duda_principal: pickFirst(data.Duda_principal, data.duda_principal),
+    explicacion_caso: pickFirst(data.Resumen_caso, data.resumen_caso, data.Explicacion_caso, data.explicacion_caso),
+    urgencia: pickFirst(data.Urgencia, data.urgencia),
+    consentimiento_original: pickFirst(data.Consentimiento, data.consentimiento_original),
+    consentimiento_valido: toBool(pickFirst(data.Consentimiento_valido, data.consentimiento_valido)),
+    email_valido: toBool(pickFirst(data.Email_valido, data.email_valido)),
+    whatsapp_valido: toBool(pickFirst(data.WhatsApp_valido, data.whatsapp_valido)),
+    es_test: toBool(pickFirst(data.Es_test, data.es_test)) || detectEsTest(pickFirst(data.Nombre_y_apellidos, data.nombre, ''), pickFirst(data.Email, data.email, '')),
+    canal_entrada: pickFirst(data.Canal_origen, data.canal_entrada, 'DIAGNOSTICO_WEBHOOK'),
+    raw_payload: data
+  };
+}
+
+function buildDiagnosticoTriageData(leadId, data) {
+  const semaforoPreIA = normalizeSemaforo(pickFirst(data.Semaforo_preIA, data.semaforo_preia));
+  const semaforoIA = normalizeSemaforo(pickFirst(data.Semaforo_IA, data.semaforo_ia));
+  const semaforoFinal = normalizeSemaforo(pickFirst(data.Semaforo_final, data.semaforo_final, semaforoIA, semaforoPreIA));
+
+  return {
+    lead_id: leadId,
+    semaforo_preia: semaforoPreIA,
+    semaforo_ia: semaforoIA,
+    semaforo_final: semaforoFinal,
+    tipo_lead_ia: pickFirst(data.Tipo_lead_IA, data.tipo_lead_ia),
+    resumen_caso: pickFirst(data.Resumen_IA, data.resumen_ia, data.Resumen_caso, data.resumen_caso),
+    motivo_clasificacion: pickFirst(data.Motivo_clasificacion, data.motivo_clasificacion),
+    dato_critico_faltante: pickFirst(data.Dato_faltante, data.dato_critico_faltante),
+    riesgo_detectado: pickFirst(data.Riesgo_detectado, data.riesgo_detectado),
+    tipo_riesgo: pickFirst(data.Tipo_riesgo, data.tipo_riesgo),
+    riesgo_duro_detectado: toBool(pickFirst(data.Riesgo_duro_detectado, data.riesgo_duro_detectado)),
+    riesgo_duro_motivo: pickFirst(data.Riesgo_duro_motivo, data.riesgo_duro_motivo),
+    accion_recomendada: pickFirst(data.Accion_recomendada, data.accion_recomendada),
+    siguiente_accion: pickFirst(data.Siguiente_accion, data.siguiente_accion),
+    respuesta_sugerida: pickFirst(data.Respuesta_sugerida, data.respuesta_sugerida),
+    requiere_revision_manual: toBool(pickFirst(data.Requiere_revision, data.requiere_revision, data.Requiere_revision_manual, data.requiere_revision_manual))
+  };
+}
+
+function shouldPersistDiagnosticoTriage(data) {
+  const trackedFields = [
+    data.Semaforo_preIA, data.semaforo_preia,
+    data.Semaforo_IA, data.semaforo_ia,
+    data.Semaforo_final, data.semaforo_final,
+    data.Tipo_lead_IA, data.tipo_lead_ia,
+    data.Motivo_clasificacion, data.motivo_clasificacion,
+    data.Riesgo_detectado, data.riesgo_detectado,
+    data.Accion_recomendada, data.accion_recomendada,
+    data.Siguiente_accion, data.siguiente_accion,
+    data.Respuesta_sugerida, data.respuesta_sugerida,
+    data.Requiere_revision, data.requiere_revision,
+    data.Requiere_revision_manual, data.requiere_revision_manual,
+    data.Riesgo_duro_detectado, data.riesgo_duro_detectado,
+    data.Error_IA, data.error_ia,
+    data.IA_JSON_valido, data.ia_json_valido
+  ];
+  return trackedFields.some((value) => value !== undefined && value !== null && value !== '');
+}
+
 router.get('/leads', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -169,30 +280,15 @@ router.post('/intake/test', async (req, res) => {
 
 router.post('/intake/diagnostico', async (req, res) => {
   try {
-    const payload = req.body;
+    const payload = req.body || {};
     const input = payload.body ?? payload;
     const data = input.data ?? input;
 
-    const leadData = {
-      lead_code: data.Lead_ID || `DIAG-${Date.now()}`,
-      nombre: data.Nombre_y_apellidos || data.nombre || '',
-      email: data.Email || data.email || null,
-      whatsapp: data.WhatsApp || data.whatsapp || null,
-      idioma_preferido: data.Idioma || data.idioma_preferido || null,
-      esta_en_espana: data.En_Espana || data.esta_en_espana || null,
-      situacion_actual: data.Situacion_actual || data.situacion_actual || null,
-      origen_ingresos: data.Origen_ingresos || data.origen_ingresos || null,
-      duda_principal: data.Duda_principal || data.duda_principal || null,
-      explicacion_caso: data.Resumen_caso || data.resumen_caso || null,
-      urgencia: data.Urgencia || data.urgencia || null,
-      consentimiento_original: data.Consentimiento || data.consentimiento_original || null,
-      consentimiento_valido: data.Consentimiento_valido === 'SI',
-      email_valido: data.Email_valido === 'SI',
-      whatsapp_valido: data.WhatsApp_valido === 'SI',
-      es_test: data.Es_test === true || data.Es_test === 'true' || detectEsTest(data.Nombre_y_apellidos, data.Email),
-      canal_entrada: data.Canal_origen || data.canal_entrada || 'DIAGNOSTICO_WEBHOOK',
-      raw_payload: data
-    };
+    const leadData = buildDiagnosticoLeadData(data);
+
+    if (!leadData.fecha_entrada) {
+      delete leadData.fecha_entrada;
+    }
 
     if (!leadData.nombre) {
       return res.status(400).json({
@@ -218,28 +314,20 @@ router.post('/intake/diagnostico', async (req, res) => {
       throw leadError;
     }
 
-    const estadoInicial = data.Estado || 'NUEVO';
-    await supabase.from('lead_status_history').insert([{
+    const estadoInicial = normalizeEstadoOperativoDiagnostico(data);
+    const { error: statusInsertError } = await supabase.from('lead_status_history').insert([{
       lead_id: lead.id,
       estado_anterior: null,
       estado_nuevo: estadoInicial,
       motivo: 'Lead creado desde DIAGNOSTICO webhook',
       changed_by: 'n8n_diagnostico'
     }]);
+    if (statusInsertError) throw statusInsertError;
 
-    if (data.Semaforo_preIA || data.Semaforo_IA) {
-      const semaforo = data.Semaforo_IA || data.Semaforo_preIA;
-      await supabase.from('lead_triage').insert([{
-        lead_id: lead.id,
-        semaforo_preia: data.Semaforo_preIA || null,
-        semaforo_ia: data.Semaforo_IA || null,
-        semaforo_final: semaforo,
-        riesgo_detectado: data.Riesgo_detectado || null,
-        tipo_riesgo: data.Tipo_riesgo || null,
-        riesgo_duro_detectado: data.Riesgo_duro_detectado === 'SI',
-        riesgo_duro_motivo: data.Riesgo_duro_motivo || null,
-        requiere_revision_manual: data.Requiere_revision === 'SI'
-      }]);
+    if (shouldPersistDiagnosticoTriage(data)) {
+      const triageData = buildDiagnosticoTriageData(lead.id, data);
+      const { error: triageInsertError } = await supabase.from('lead_triage').insert([triageData]);
+      if (triageInsertError) throw triageInsertError;
     }
 
     res.status(201).json({
@@ -541,3 +629,9 @@ router.get('/leads/:id/interactions', async (req, res) => {
 });
 
 export default router;
+
+export {
+  buildDiagnosticoLeadData,
+  buildDiagnosticoTriageData,
+  normalizeEstadoOperativoDiagnostico
+};

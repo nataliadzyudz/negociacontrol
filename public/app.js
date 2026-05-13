@@ -120,6 +120,8 @@ function adaptLeadFromBackend(lead) {
   const triage = triageRows.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0] || {};
   const statusRows = Array.isArray(lead.lead_status_history) ? lead.lead_status_history : (lead.lead_status_history ? [lead.lead_status_history] : []);
   const statusHistory = statusRows.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0] || {};
+  const raw = lead.raw_payload || {};
+  const iaJsonValidoRaw = raw.IA_JSON_valido ?? raw.ia_json_valido ?? null;
   
   return {
     Lead_ID: lead.lead_code,
@@ -136,18 +138,27 @@ function adaptLeadFromBackend(lead) {
     Resumen_caso: lead.explicacion_caso,
     Urgencia: lead.urgencia,
     Consentimiento: lead.consentimiento_original,
+    Consentimiento_valido: lead.consentimiento_valido === true,
+    Email_valido: lead.email_valido === true,
+    WhatsApp_valido: lead.whatsapp_valido === true,
+    Semaforo_preIA: triage.semaforo_preia,
     Semaforo_IA: triage.semaforo_ia || 'AMARILLO',
+    Semaforo_final: triage.semaforo_final || triage.semaforo_ia || triage.semaforo_preia || 'AMARILLO',
     Tipo_lead_IA: triage.tipo_lead_ia,
     Resumen_IA: triage.resumen_caso,
     Motivo_clasificacion: triage.motivo_clasificacion,
     Dato_faltante: triage.dato_critico_faltante,
     Riesgo_detectado: triage.riesgo_detectado,
     Tipo_riesgo: triage.tipo_riesgo,
+    Riesgo_duro_detectado: triage.riesgo_duro_detectado === true,
+    Riesgo_duro_motivo: triage.riesgo_duro_motivo,
     Accion_recomendada: triage.accion_recomendada,
     Siguiente_accion: triage.siguiente_accion,
     Respuesta_sugerida: triage.respuesta_sugerida,
+    Requiere_revision_manual: triage.requiere_revision_manual === true,
     Requiere_revision: triage.requiere_revision_manual ? 'SI' : 'NO',
-    Semaforo_final: triage.semaforo_final,
+    Error_IA: (raw.Error_IA ?? raw.error_ia ?? 'NO'),
+    IA_JSON_valido: iaJsonValidoRaw,
     Estado: statusHistory.estado_nuevo || 'NUEVO',
     Es_test: lead.es_test ? 'SÍ' : 'NO',
     Canal_origen: lead.canal_entrada,
@@ -262,14 +273,14 @@ function createLeadCard(lead) {
   const langCode = langMap[lead.Idioma] || (lead.Idioma || "ES").substring(0,2).toUpperCase();
   
   const card = document.createElement('div');
-  card.className = `lead-card border-${(lead.Semaforo_IA || "VERDE").toUpperCase()}`;
+  card.className = `lead-card border-${(lead.Semaforo_final || "VERDE").toUpperCase()}`;
   card.innerHTML = `
     <div class="card-top">
       <span class="lead-id">${lead.Lead_ID || "NC-L-XXXX"}</span>
       <div class="card-top-badges">
         <span class="tag tag-idioma">${langCode}</span>
-        ${lead.Semaforo_IA !== 'ERROR_IA' 
-          ? `<span class="semaforo-dot dot-${(lead.Semaforo_IA || "VERDE").toUpperCase()}" title="${lead.Semaforo_IA}"></span>`
+        ${lead.Semaforo_final !== 'ERROR_IA' 
+          ? `<span class="semaforo-dot dot-${(lead.Semaforo_final || "VERDE").toUpperCase()}" title="Final: ${lead.Semaforo_final || 'N/A'} · IA: ${lead.Semaforo_IA || 'N/A'}"></span>`
           : `<span class="mini-badge incidencia-badge" style="font-size: 7px; padding: 2px 4px;">ERROR IA</span>`
         }
       </div>
@@ -315,7 +326,7 @@ async function openDrawer(lead) {
   document.getElementById('drawer-lead-status').textContent = estadoOperativo;
   
   const semaforoEl = document.getElementById('drawer-lead-semaforo');
-  const semaforoVal = (lead.Semaforo_IA || "VERDE").toUpperCase();
+  const semaforoVal = (lead.Semaforo_final || "VERDE").toUpperCase();
   semaforoEl.textContent = semaforoVal;
   semaforoEl.className = `semaforo-badge ${semaforoVal}`;
   
@@ -331,9 +342,15 @@ async function openDrawer(lead) {
   const alertsContainer = document.getElementById('drawer-alerts-container');
   alertsContainer.innerHTML = '';
   
-  // Consentimiento is string "He leído..." or boolean true in PRD. In sheet it's the text string. 
-  // Let's assume truthy or length > 10.
-  const hasConsent = lead.Consentimiento === true || (typeof lead.Consentimiento === 'string' && lead.Consentimiento.length > 5);
+  const consentimientoValido = lead.Consentimiento_valido === true;
+  const emailValido = lead.Email_valido === true;
+  const whatsappValido = lead.WhatsApp_valido === true;
+  const riesgoDuroDetectado = lead.Riesgo_duro_detectado === true;
+  const requiereRevisionManual = lead.Requiere_revision_manual === true;
+  const errorIA = String(lead.Error_IA || '').toUpperCase() === 'SI';
+  const iaJsonValido = lead.IA_JSON_valido;
+  const iaJsonInvalido = iaJsonValido !== null && String(iaJsonValido).toUpperCase() === 'NO';
+  const hasConsent = consentimientoValido || (lead.Consentimiento === true || (typeof lead.Consentimiento === 'string' && lead.Consentimiento.length > 5));
   
   // Desactivación de botones por consentimiento
   const btnWA = document.getElementById('btn-copy-wa');
@@ -358,10 +375,45 @@ async function openDrawer(lead) {
     alertsContainer.appendChild(alert);
   }
 
+  if (!emailValido) {
+    const alert = document.createElement('div');
+    alert.className = 'consent-alert';
+    alert.innerHTML = `<strong>⚠️ EMAIL INVALIDO</strong> <p style="font-size:12px;">Revisar email antes de cualquier envio.</p>`;
+    alertsContainer.appendChild(alert);
+  }
+
+  if (!whatsappValido) {
+    const alert = document.createElement('div');
+    alert.className = 'consent-alert';
+    alert.innerHTML = `<strong>⚠️ WHATSAPP INVALIDO</strong> <p style="font-size:12px;">Validar numero antes de contacto.</p>`;
+    alertsContainer.appendChild(alert);
+  }
+
   if (lead.Riesgo_detectado && lead.Riesgo_detectado !== "Sin riesgo relevante" && lead.Riesgo_detectado !== "Sin riesgo") {
     const alert = document.createElement('div');
     alert.style = "background:#FEE2E2; color:#991B1B; padding:12px; border-radius:8px; margin-bottom:20px; font-size:13px; border-left:4px solid #991B1B;";
     alert.innerHTML = `<strong>🚨 RIESGO DETECTADO: ${lead.Tipo_riesgo || lead.Riesgo_detectado}</strong>`;
+    alertsContainer.appendChild(alert);
+  }
+
+  if (riesgoDuroDetectado) {
+    const alert = document.createElement('div');
+    alert.style = "background:#FEE2E2; color:#991B1B; padding:12px; border-radius:8px; margin-bottom:20px; font-size:13px; border-left:4px solid #7F1D1D;";
+    alert.innerHTML = `<strong>🚨 RIESGO DURO DETECTADO</strong> <p style="font-size:12px;">Requiere revision manual obligatoria.</p>`;
+    alertsContainer.appendChild(alert);
+  }
+
+  if (requiereRevisionManual) {
+    const alert = document.createElement('div');
+    alert.className = 'consent-alert';
+    alert.innerHTML = `<strong>⚠️ REVISION MANUAL REQUERIDA</strong>`;
+    alertsContainer.appendChild(alert);
+  }
+
+  if (errorIA || iaJsonInvalido) {
+    const alert = document.createElement('div');
+    alert.style = "background:#E0E7FF; color:#312E81; padding:12px; border-radius:8px; margin-bottom:20px; font-size:13px; border-left:4px solid #4338CA;";
+    alert.innerHTML = `<strong>⚠️ ERROR IA / JSON IA INVALIDO</strong> <p style="font-size:12px;">Escalar a revision manual antes de respuesta.</p>`;
     alertsContainer.appendChild(alert);
   }
 
@@ -436,6 +488,8 @@ async function openDrawer(lead) {
       <div class="data-grid">
         <div class="data-item"><span class="data-label">Revisión Natalia</span><span class="data-value">${getVal(lead.Revision_Natalia, "Pendiente")}</span></div>
         <div class="data-item"><span class="data-label">Semaforo Final</span><span class="data-value">${getVal(lead.Semaforo_final, "Igual que IA")}</span></div>
+        <div class="data-item"><span class="data-label">Semaforo IA (informativo)</span><span class="data-value">${getVal(lead.Semaforo_IA)}</span></div>
+        <div class="data-item"><span class="data-label">Semaforo preIA (técnico)</span><span class="data-value">${getVal(lead.Semaforo_preIA, "N/A")}</span></div>
       </div>
       <div class="data-item" style="margin-top:12px;">
         <span class="data-label">Comentarios / Notas NC</span>
@@ -545,7 +599,7 @@ function applyFilters(data) {
     const estado = l.Estado || "NUEVO";
     const matchEstado = filters.estado === 'all' || estado === filters.estado;
     
-    const semaforo = (l.Semaforo_IA || "VERDE").toUpperCase();
+    const semaforo = (l.Semaforo_final || "VERDE").toUpperCase();
     const matchSemaforo = filters.semaforo === 'all' || semaforo === filters.semaforo;
     
     const urgencia = l.Urgencia || "";
@@ -567,10 +621,10 @@ function updateStats() {
   document.getElementById('stat-urgentes').textContent = LEADS.filter(l => l.Urgencia === 'Esta semana').length.toString().padStart(2, '0');
 
   // Semáforo Comercial / Técnico
-  document.getElementById('stat-verdes').textContent = LEADS.filter(l => l.Semaforo_IA === 'VERDE').length.toString().padStart(2, '0');
-  document.getElementById('stat-amarillos').textContent = LEADS.filter(l => l.Semaforo_IA === 'AMARILLO').length.toString().padStart(2, '0');
-  document.getElementById('stat-rojos').textContent = LEADS.filter(l => l.Semaforo_IA === 'ROJO').length.toString().padStart(2, '0');
-  document.getElementById('stat-error-ia').textContent = LEADS.filter(l => l.Semaforo_IA === 'ERROR_IA').length.toString().padStart(2, '0');
+  document.getElementById('stat-verdes').textContent = LEADS.filter(l => l.Semaforo_final === 'VERDE').length.toString().padStart(2, '0');
+  document.getElementById('stat-amarillos').textContent = LEADS.filter(l => l.Semaforo_final === 'AMARILLO').length.toString().padStart(2, '0');
+  document.getElementById('stat-rojos').textContent = LEADS.filter(l => l.Semaforo_final === 'ROJO').length.toString().padStart(2, '0');
+  document.getElementById('stat-error-ia').textContent = LEADS.filter(l => String(l.Error_IA || '').toUpperCase() === 'SI' || String(l.IA_JSON_valido || '').toUpperCase() === 'NO').length.toString().padStart(2, '0');
 }
 
 // --- EVENTS ---

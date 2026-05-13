@@ -682,7 +682,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://16.171.174.52:8080/api/leads",
+        "url": "http://16.171.174.52:8080/api/intake/diagnostico",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -694,7 +694,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { nombre: $json.Nombre_y_apellidos || 'Lead Test Diagnostico N8N', email: $json.Email || 'diagnostico.n8n.test@example.com', whatsapp: $json.WhatsApp || '34600000000', idioma_preferido: $json.Idioma || 'Espanol', duda_principal: $json.Duda_principal || 'Diagnostico fiscal', explicacion_caso: $json.Resumen_caso || $json.Explicacion_caso || 'Prueba controlada desde n8n lab', urgencia: $json.Urgencia || 'Solo explorando', consentimiento_valido: ($json.Consentimiento_valido === 'SI') || ($json.Consentimiento_valido === true) || ($json.Consentimiento === 'SI') || ($json.Consentimiento === 'SÍ') || ($json.Consentimiento === true), email_valido: ($json.Email_valido === 'SI') || ($json.Email_valido === true) || !!$json.Email, whatsapp_valido: ($json.WhatsApp_valido === 'SI') || ($json.WhatsApp_valido === true) || !!$json.WhatsApp, es_test: true, canal_entrada: 'diagnostico_n8n_lab_test' } }}",
+        "jsonBody": "={{ { ...$json, lead_code: $json.Lead_ID || $json.lead_code, nombre: $json.Nombre_y_apellidos || $json.nombre, email: $json.Email || $json.email, whatsapp: $json.WhatsApp || $json.whatsapp, idioma_preferido: $json.Idioma || $json.idioma_preferido, esta_en_espana: $json.En_Espana || $json.esta_en_espana, situacion_actual: $json.Situacion_actual || $json.situacion_actual, origen_ingresos: $json.Origen_ingresos || $json.origen_ingresos, duda_principal: $json.Duda_principal || $json.duda_principal, explicacion_caso: $json.Resumen_caso || $json.resumen_caso || $json.Explicacion_caso || $json.explicacion_caso, urgencia: $json.Urgencia || $json.urgencia, consentimiento_original: $json.Consentimiento || $json.consentimiento_original, consentimiento_valido: ($json.Consentimiento_valido === 'SI') || ($json.Consentimiento_valido === true) || ($json.consentimiento_valido === true), email_valido: ($json.Email_valido === 'SI') || ($json.Email_valido === true) || ($json.email_valido === true), whatsapp_valido: ($json.WhatsApp_valido === 'SI') || ($json.WhatsApp_valido === true) || ($json.whatsapp_valido === true), es_test: ($json.Es_test === 'SI') || ($json.Es_test === true) || ($json.es_test === true), Es_test: ($json.Es_test || ($json.es_test ? 'SI' : 'NO')), canal_entrada: $json.Canal_origen || $json.canal_entrada || 'diagnostico_candidate_controlled_test', Canal_origen: $json.Canal_origen || $json.canal_entrada || 'diagnostico_candidate_controlled_test' } }}",
         "options": {
           "response": {
             "response": {
@@ -741,11 +741,6 @@
         [
           {
             "node": "Append row in sheet1",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "HTTP Supabase Intake",
             "type": "main",
             "index": 0
           }
@@ -830,6 +825,11 @@
         [
           {
             "node": "AVISO INTERNO - CONFIGURAR",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Supabase Intake",
             "type": "main",
             "index": 0
           }
