@@ -6,7 +6,8 @@ Antigravity se usa en NC solo para tareas de UI/UX/frontend en fase controlada:
 
 - diseno visual y estructura operativa del dashboard,
 - experiencia de uso en `public/*`,
-- prototipo funcional y demo interna controlada.
+- prototipo funcional y demo interna controlada,
+- alineación con `docs/00_CANON/brand/BRAND_UI_TOKENS_NC.md` (con `BRANDINGBOOK_V3.pdf` como fuente canónica).
 
 Fuera de alcance de Antigravity en este proyecto:
 
@@ -40,13 +41,19 @@ Fuera de alcance de Antigravity en este proyecto:
 - Endpoint canonico de entrada DIAGNOSTICO: `POST /api/intake/diagnostico`.
 - Referencias antiguas que marcan `/api/leads` como canonico de DIAGNOSTICO no gobiernan UI V0.1.
 
-## 5) Archivos permitidos para ejecucion UI
+## 5) Diseño, Tono y Límites de Marca
+
+- `docs/00_CANON/brand/BRANDINGBOOK_V3.pdf` es la fuente canónica e indiscutible de diseño.
+- Para ejecución técnica de UI, usar los mapeos de `docs/00_CANON/brand/BRAND_UI_TOKENS_NC.md`.
+- Antigravity no alterará la paleta de colores ni la jerarquía visual sin justificación funcional aprobada.
+
+## 6) Archivos permitidos para ejecucion UI
 
 - `public/app.js`
 - `public/styles.css`
 - `public/index.html` solo si la TASK_SPEC activa lo autoriza expresamente.
 
-## 6) DO_NOT_TOUCH estricto
+## 7) DO_NOT_TOUCH estricto
 
 - `backend/*`
 - `n8n_workflows/*`
@@ -56,7 +63,7 @@ Fuera de alcance de Antigravity en este proyecto:
 - workflows n8n activos
 - `master/main`
 
-## 7) Trabajo por bloques (obligatorio)
+## 8) Trabajo por bloques (obligatorio)
 
 - **BLOQUE 0:** Diagnostico de entorno y contrato.
 - **BLOQUE 1:** TASK_SPEC UI aprobada.
@@ -64,7 +71,7 @@ Fuera de alcance de Antigravity en este proyecto:
 - **BLOQUE 3:** QA visual y QA de contrato de datos.
 - **BLOQUE 4:** Cierre con evidencia, rollback y siguiente paso.
 
-## 8) Protocolo de cierre obligatorio
+## 9) Protocolo de cierre obligatorio
 
 Todo cierre debe incluir:
 
@@ -73,7 +80,7 @@ Todo cierre debe incluir:
 - rollback,
 - un unico `NEXT_STEP`.
 
-## 9) Regla de seguridad y foco
+## 10) Regla de seguridad y foco
 
 - No exponer secretos.
 - No ejecutar cambios fuera de la TASK_SPEC.

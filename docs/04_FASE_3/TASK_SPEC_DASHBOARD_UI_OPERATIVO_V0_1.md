@@ -39,6 +39,7 @@ Evolucionar el dashboard operativo para mejorar legibilidad, accionabilidad y co
 - `AGENTS.md`
 - `PROJECT_STATE.md`
 - `ANTIGRAVITY_RULES_NC.md`
+- `docs/00_CANON/brand/BRAND_UI_TOKENS_NC.md`
 - `docs/04_FASE_3/QUICK_START_FASE3.md`
 - `docs/04_FASE_3/REVIEW_F3_V0_OPERAR_LEADS_DASHBOARD_AWS.md`
 - `docs/00_CANON/GOVERNANCE.md`
@@ -72,6 +73,7 @@ Validacion cerrada sobre entorno runtime controlado:
 - `Semaforo_final` gobierna prioridad visual operativa (cards, filtros semaforo, stats semaforo).
 - `Semaforo_IA` y `Semaforo_preIA` se muestran como auditoria/informativo.
 - Prohibido mezclar `Estado` con semaforo como criterio principal de pipeline.
+- Todo diseño debe consumir los tokens de `docs/00_CANON/BRAND_UI_TOKENS_NC.md`, priorizando legibilidad y sobriedad.
 
 ## 9. Mejoras previstas (UI V0.1)
 
