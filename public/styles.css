@@ -1,16 +1,17 @@
 /* Warm Professional NC Identity - PREMIUM EDITION (Frontend Skills Applied) */
 :root {
-    --bg-primary: #FDFBFA; /* Slightly warmer */
-    --bg-secondary: #EAF0F5;
-    --text-primary: #0F172A; /* Deeper charcoal */
+    --bg-primary: #F9F6F1; /* Fondo cálido premium - hueso NC */
+    --bg-secondary: #EAF0F5; /* Azul pálido operativo */
+    --text-primary: #17212B; /* Charcoal NC profundo */
     --text-secondary: #4B5A69;
-    --accent: #D4612A;
+    --accent: #D4612A; /* Terracota NC */
     --accent-hover: #B54D1F;
+    --primary-blue: #1C6EA4; /* Azul corporativo NC */
     --border-color: rgba(226, 232, 240, 0.6);
     
     --color-verde: #166534;
     --bg-verde: #DCFCE7;
-    --semaforo-verde: #82C99B; /* Sincronizado con Diag. Propuesto */
+    --semaforo-verde: #82C99B;
     --color-amarillo: #854D0E;
     --bg-amarillo: #FEF9C3;
     --color-rojo: #991B1B;
@@ -29,7 +30,7 @@
     --border-error-dark: #312E81;    /* Error IA (Más oscuro) */
     --border-neutral: #CBD5E1;
     
-    --font-serif: 'Noto Serif', serif;
+    --font-serif: 'DM Serif Display', serif;
     --font-sans: 'Manrope', sans-serif;
     
     /* Advanced Shadows */
@@ -559,4 +560,222 @@ body::before {
     border-radius: 8px;
     padding: 10px;
     font-size: 12px;
+}
+
+/* --- CLASES SEMÁNTICAS NC V0.1 --- */
+
+/* Bloque IA Premium */
+.ia-triage-block {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 20px;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-elevated);
+}
+
+.ia-triage-block .section-title {
+    color: #94a3b8;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+    font-size: 11px;
+}
+
+.ia-data-item {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.ia-data-label {
+    color: #94a3b8;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.ia-data-value {
+    color: #f1f5f9;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Alertas de Riesgo y Errores */
+.alert-riesgo-detectado {
+    background: #FEE2E2;
+    color: #991B1B;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    border-left: 6px solid #991B1B;
+    font-weight: 700;
+}
+
+.alert-error-ia {
+    background: #E0E7FF;
+    color: #312E81;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    border-left: 6px solid #4338CA;
+    font-weight: 700;
+}
+
+/* Action Banners */
+.action-banner-primary {
+    margin-top: 16px;
+    background: linear-gradient(90deg, #D4612A 0%, #B54D1F 100%);
+    padding: 16px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 4px 12px rgba(212, 97, 42, 0.3);
+    color: white;
+}
+
+.action-banner-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 800;
+}
+
+.action-banner-value {
+    font-size: 16px;
+    font-weight: 800;
+}
+
+/* Respuesta Sugerida Box */
+.suggested-response-container {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 12px;
+}
+
+.suggested-response-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.suggested-response-content {
+    font-size: 13px;
+    font-style: italic;
+    color: #cbd5e1;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    background: rgba(30, 41, 59, 0.5);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-copy-premium {
+    background: #0ea5e9;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-copy-premium:hover {
+    background: #0284c7;
+    transform: translateY(-1px);
+}
+
+/* Auditoría IA (Secundaria) */
+.audit-ia-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.audit-ia-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+/* Responsive Mínimo */
+/* --- IA Audit Block --- */
+.audit-ia-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+    background: var(--bg-secondary);
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.audit-ia-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+@media (max-width: 1024px) {
+    .pipeline-canvas {
+        gap: 12px;
+    }
+    .pipeline-column {
+        flex: 0 0 280px;
+        min-width: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+    .pipeline-canvas {
+        flex-direction: column;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    .pipeline-column {
+        flex: none;
+        width: 100%;
+        min-width: 100%;
+        height: auto;
+        max-height: 500px;
+    }
+    .drawer-content {
+        max-width: 100%;
+    }
+    .main-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .header-left {
+        gap: 20px;
+    }
+    .dashboard-bar {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .stat-card, .stat-pill {
+        flex: 1 1 120px;
+    }
 }

@@ -371,49 +371,49 @@ async function openDrawer(lead) {
   if (!hasConsent) {
     const alert = document.createElement('div');
     alert.className = 'consent-alert';
-    alert.innerHTML = `<strong>⚠️ FALTA CONSENTIMIENTO</strong> <p style="font-size:12px;">No contactar por WhatsApp/Email hasta validación manual.</p>`;
+    alert.innerHTML = `<strong>⚠️ FALTA CONSENTIMIENTO</strong> <p>No contactar por WhatsApp/Email hasta validación manual.</p>`;
     alertsContainer.appendChild(alert);
   }
 
   if (!emailValido) {
     const alert = document.createElement('div');
     alert.className = 'consent-alert';
-    alert.innerHTML = `<strong>⚠️ EMAIL INVALIDO</strong> <p style="font-size:12px;">Revisar email antes de cualquier envio.</p>`;
+    alert.innerHTML = `<strong>⚠️ EMAIL INVÁLIDO</strong> <p>Revisar email antes de cualquier envío.</p>`;
     alertsContainer.appendChild(alert);
   }
 
   if (!whatsappValido) {
     const alert = document.createElement('div');
     alert.className = 'consent-alert';
-    alert.innerHTML = `<strong>⚠️ WHATSAPP INVALIDO</strong> <p style="font-size:12px;">Validar numero antes de contacto.</p>`;
+    alert.innerHTML = `<strong>⚠️ WHATSAPP INVÁLIDO</strong> <p>Validar número antes de contacto.</p>`;
     alertsContainer.appendChild(alert);
   }
 
   if (lead.Riesgo_detectado && lead.Riesgo_detectado !== "Sin riesgo relevante" && lead.Riesgo_detectado !== "Sin riesgo") {
     const alert = document.createElement('div');
-    alert.style = "background:#FEE2E2; color:#991B1B; padding:12px; border-radius:8px; margin-bottom:20px; font-size:13px; border-left:4px solid #991B1B;";
-    alert.innerHTML = `<strong>🚨 RIESGO DETECTADO: ${lead.Tipo_riesgo || lead.Riesgo_detectado}</strong>`;
+    alert.className = 'alert-riesgo-detectado';
+    alert.innerHTML = `🚨 RIESGO DETECTADO: ${lead.Tipo_riesgo || lead.Riesgo_detectado}`;
     alertsContainer.appendChild(alert);
   }
 
   if (riesgoDuroDetectado) {
     const alert = document.createElement('div');
-    alert.style = "background:#FEE2E2; color:#991B1B; padding:12px; border-radius:8px; margin-bottom:20px; font-size:13px; border-left:4px solid #7F1D1D;";
-    alert.innerHTML = `<strong>🚨 RIESGO DURO DETECTADO</strong> <p style="font-size:12px;">Requiere revision manual obligatoria.</p>`;
+    alert.className = 'alert-riesgo-detectado';
+    alert.innerHTML = `🚨 RIESGO DURO DETECTADO <p style="font-size:12px; margin-top:4px;">Requiere revisión manual obligatoria.</p>`;
     alertsContainer.appendChild(alert);
   }
 
   if (requiereRevisionManual) {
     const alert = document.createElement('div');
     alert.className = 'consent-alert';
-    alert.innerHTML = `<strong>⚠️ REVISION MANUAL REQUERIDA</strong>`;
+    alert.innerHTML = `<strong>⚠️ REVISIÓN MANUAL REQUERIDA</strong>`;
     alertsContainer.appendChild(alert);
   }
 
   if (errorIA || iaJsonInvalido) {
     const alert = document.createElement('div');
-    alert.style = "background:#E0E7FF; color:#312E81; padding:12px; border-radius:8px; margin-bottom:20px; font-size:13px; border-left:4px solid #4338CA;";
-    alert.innerHTML = `<strong>⚠️ ERROR IA / JSON IA INVALIDO</strong> <p style="font-size:12px;">Escalar a revision manual antes de respuesta.</p>`;
+    alert.className = 'alert-error-ia';
+    alert.innerHTML = `⚠️ ERROR IA / JSON IA INVÁLIDO <p style="font-size:12px; margin-top:4px;">Escalar a revisión manual antes de respuesta.</p>`;
     alertsContainer.appendChild(alert);
   }
 
@@ -451,34 +451,40 @@ async function openDrawer(lead) {
     </section>
 
     <!-- SECCIÓN 3: ANÁLISIS IA (TRIAGE) -->
-    <section class="drawer-section" style="background: #1e293b; border-radius: 8px; padding: 14px; color: #f8fafc; border: 1px solid #334155; margin-bottom: 16px;">
-      <h4 class="section-title" style="color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">3. Análisis IA (Triage Operativo)</h4>
+    <section class="ia-triage-block">
+      <h4 class="section-title">3. Análisis IA (Triage Operativo)</h4>
       
-      <div class="data-item" style="border:none; padding:0; background:none; margin-bottom: 12px;">
-        <span class="data-label" style="color: #cbd5e1; font-size: 11px;">Resumen IA</span>
-        <p style="font-size:13px; font-weight:500; color: #f1f5f9; line-height: 1.5; margin-top: 4px;">${getVal(lead.Resumen_IA)}</p>
+      <div class="ia-data-item">
+        <span class="ia-data-label">Resumen IA</span>
+        <p class="ia-data-value" style="font-weight:400; line-height:1.5;">${getVal(lead.Resumen_IA)}</p>
       </div>
       
-      <div class="data-grid" style="margin-bottom: 14px; gap: 8px;">
-        <div class="data-item" style="background: #0f172a; border-color: #334155; padding: 10px;"><span class="data-label" style="color: #94a3b8; font-size: 11px;">Motivo Clasificación</span><span class="data-value" style="color: #f1f5f9; font-size:12px;">${getVal(lead.Motivo_clasificacion)}</span></div>
-        <div class="data-item" style="background: #0f172a; border-color: #334155; padding: 10px;"><span class="data-label" style="color: #94a3b8; font-size: 11px;">Dato Faltante</span><span class="data-value" style="color: #fca5a5; font-size:12px;">${getVal(lead.Dato_faltante, "Ninguno")}</span></div>
+      <div class="data-grid" style="gap: 10px; margin-bottom: 14px;">
+        <div class="ia-data-item" style="margin-bottom:0;">
+          <span class="ia-data-label">Motivo Clasificación</span>
+          <span class="ia-data-value">${getVal(lead.Motivo_clasificacion)}</span>
+        </div>
+        <div class="ia-data-item" style="margin-bottom:0;">
+          <span class="ia-data-label">Dato Faltante</span>
+          <span class="ia-data-value" style="color: #fca5a5;">${getVal(lead.Dato_faltante, "Ninguno")}</span>
+        </div>
       </div>
       
       <!-- SUGGESTED RESPONSE -->
-      <div class="data-item" style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; position: relative;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span class="data-label" style="color: #38bdf8; margin-bottom: 0; font-size: 11px;">Respuesta Sugerida (Borrador IA)</span>
-          <button onclick="navigator.clipboard.writeText(\`${(lead.Respuesta_sugerida || '').replace(/`/g, '\\`')}\`)" style="background: #0ea5e9; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#0284c7'" onmouseout="this.style.background='#0ea5e9'">
+      <div class="suggested-response-container">
+        <div class="suggested-response-header">
+          <span class="ia-data-label" style="margin-bottom: 0; color: #38bdf8;">Respuesta Sugerida (Borrador IA)</span>
+          <button class="btn-copy-premium" onclick="navigator.clipboard.writeText(\`${(lead.Respuesta_sugerida || '').replace(/`/g, '\\`')}\`)">
             📋 Copiar
           </button>
         </div>
-        <div style="font-size:12px; font-style:italic; color:#cbd5e1; line-height: 1.5; white-space: pre-wrap; background: #1e293b; padding: 10px; border-radius: 6px;">${getVal(lead.Respuesta_sugerida, "No se generó respuesta sugerida para este caso.")}</div>
+        <div class="suggested-response-content">${getVal(lead.Respuesta_sugerida, "No se generó respuesta sugerida para este caso.")}</div>
       </div>
 
       <!-- ACTION BANNER -->
-      <div style="margin-top: 14px; background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
-        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #e0f2fe; font-weight: 600;">Siguiente Acción Operativa</span>
-        <span style="font-size: 14px; font-weight: 700; color: white;">${getVal(lead.Siguiente_accion || lead.Accion_recomendada, "Revisión Manual Obligatoria")}</span>
+      <div class="action-banner-primary">
+        <span class="action-banner-label">Siguiente Acción Operativa</span>
+        <span class="action-banner-value">${getVal(lead.Siguiente_accion || lead.Accion_recomendada, "Revisión Manual Obligatoria")}</span>
       </div>
     </section>
 
@@ -487,17 +493,27 @@ async function openDrawer(lead) {
       <h4 class="section-title">4. Gestión Comercial NC</h4>
       <div class="data-grid">
         <div class="data-item"><span class="data-label">Revisión Natalia</span><span class="data-value">${getVal(lead.Revision_Natalia, "Pendiente")}</span></div>
-        <div class="data-item"><span class="data-label">Semaforo Final</span><span class="data-value">${getVal(lead.Semaforo_final, "Igual que IA")}</span></div>
-        <div class="data-item"><span class="data-label">Semaforo IA (informativo)</span><span class="data-value">${getVal(lead.Semaforo_IA)}</span></div>
-        <div class="data-item"><span class="data-label">Semaforo preIA (técnico)</span><span class="data-value">${getVal(lead.Semaforo_preIA, "N/A")}</span></div>
+        <div class="data-item"><span class="data-label">Semáforo Final</span><span class="data-value" style="font-weight:800;">${getVal(lead.Semaforo_final, "Igual que IA")}</span></div>
       </div>
-      <div class="data-item" style="margin-top:12px;">
+      
+      <div class="audit-ia-grid">
+        <div class="audit-ia-item">
+          <span class="ia-data-label">IA</span>
+          <span class="ia-data-value" style="font-size:11px;">${getVal(lead.Semaforo_IA)}</span>
+        </div>
+        <div class="audit-ia-item">
+          <span class="ia-data-label">preIA</span>
+          <span class="ia-data-value" style="font-size:11px;">${getVal(lead.Semaforo_preIA, "N/A")}</span>
+        </div>
+      </div>
+
+      <div class="data-item" style="margin-top:16px;">
         <span class="data-label">Comentarios / Notas NC</span>
-        <textarea style="width:100%; height:80px; padding:10px; border-radius:8px; border:1px solid var(--border-color); font-size:12px;" placeholder="Natalia, añade tus notas aquí...">${lead.Comentario_revision || ""}</textarea>
+        <textarea style="width:100%; height:80px; padding:12px; border-radius:8px; border:1px solid var(--border-color); font-size:13px; font-family:var(--font-sans);" placeholder="Natalia, añade tus notas aquí...">${lead.Comentario_revision || ""}</textarea>
       </div>
       <div class="data-item" style="margin-top:12px;">
         <span class="data-label">Notas registradas</span>
-        <div>${(lead.lead_notes || []).length ? (lead.lead_notes || []).map(n => `<p style="margin:4px 0;">- ${n.note}</p>`).join('') : '<span class="text-muted">Sin notas registradas.</span>'}</div>
+        <div style="max-height:150px; overflow-y:auto; padding-right:8px;">${(lead.lead_notes || []).length ? (lead.lead_notes || []).map(n => `<p style="margin:8px 0; font-size:13px; border-bottom:1px solid #f1f5f9; padding-bottom:4px;">- ${n.note}</p>`).join('') : '<span class="text-muted">Sin notas registradas.</span>'}</div>
       </div>
     </section>
 
