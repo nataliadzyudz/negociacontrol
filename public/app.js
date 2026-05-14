@@ -281,14 +281,14 @@ function createLeadCard(lead) {
         <span class="tag tag-idioma">${langCode}</span>
         ${lead.Semaforo_final !== 'ERROR_IA' 
           ? `<span class="semaforo-dot dot-${(lead.Semaforo_final || "VERDE").toUpperCase()}" title="Final: ${lead.Semaforo_final || 'N/A'} · IA: ${lead.Semaforo_IA || 'N/A'}"></span>`
-          : `<span class="mini-badge incidencia-badge" style="font-size: 7px; padding: 2px 4px;">ERROR IA</span>`
+          : `<span class="mini-badge incidencia-badge incidencia-badge-compact">ERROR IA</span>`
         }
       </div>
     </div>
     <h4 class="lead-name">${lead.Nombre_y_apellidos || "Sin Nombre"}</h4>
     <div class="card-tags">
       <span class="tag tag-urgencia">${lead.Urgencia || "Normal"}</span>
-      <span class="tag" style="background:#E2E8F0; color:#4B5A69;" title="${(lead.Tipo_lead_IA || lead.Duda_principal || 'General')}">${(lead.Tipo_lead_IA || lead.Duda_principal || "General").substring(0,22)}${(lead.Tipo_lead_IA || lead.Duda_principal || "General").length > 22 ? '...' : ''}</span>
+      <span class="tag tag-secondary" title="${(lead.Tipo_lead_IA || lead.Duda_principal || 'General')}">${(lead.Tipo_lead_IA || lead.Duda_principal || "General").substring(0,22)}${(lead.Tipo_lead_IA || lead.Duda_principal || "General").length > 22 ? '...' : ''}</span>
     </div>
     <p class="card-desc">${(lead.Resumen_caso || "").substring(0, 60)}...</p>
     <div class="card-footer">
@@ -313,7 +313,7 @@ async function openDrawer(lead) {
   // Helper para campos vacíos
   const getVal = (val, placeholder = "Pendiente") => {
     const isInvalid = val === undefined || val === null || val === "" || val === false;
-    return isInvalid ? `<span class="text-muted" style="opacity:0.4;">${placeholder}</span>` : val;
+    return isInvalid ? `<span class="text-muted text-muted-soft">${placeholder}</span>` : val;
   };
 
   // 1. Header & Identidad
@@ -399,7 +399,7 @@ async function openDrawer(lead) {
   if (riesgoDuroDetectado) {
     const alert = document.createElement('div');
     alert.className = 'alert-riesgo-detectado';
-    alert.innerHTML = `🚨 RIESGO DURO DETECTADO <p style="font-size:12px; margin-top:4px;">Requiere revisión manual obligatoria.</p>`;
+    alert.innerHTML = `🚨 RIESGO DURO DETECTADO <p class="alert-detail-text">Requiere revisión manual obligatoria.</p>`;
     alertsContainer.appendChild(alert);
   }
 
@@ -413,7 +413,7 @@ async function openDrawer(lead) {
   if (errorIA || iaJsonInvalido) {
     const alert = document.createElement('div');
     alert.className = 'alert-error-ia';
-    alert.innerHTML = `⚠️ ERROR IA / JSON IA INVÁLIDO <p style="font-size:12px; margin-top:4px;">Escalar a revisión manual antes de respuesta.</p>`;
+    alert.innerHTML = `⚠️ ERROR IA / JSON IA INVÁLIDO <p class="alert-detail-text">Escalar a revisión manual antes de respuesta.</p>`;
     alertsContainer.appendChild(alert);
   }
 
@@ -440,13 +440,13 @@ async function openDrawer(lead) {
         <div class="data-item"><span class="data-label">Origen Ingresos</span><span class="data-value">${getVal(lead.Origen_ingresos)}</span></div>
         <div class="data-item"><span class="data-label">Urgencia</span><span class="data-value">${getVal(lead.Urgencia)}</span></div>
       </div>
-      <div class="data-item" style="margin-top:16px;">
+      <div class="data-item data-item-spaced-16">
         <span class="data-label">Duda Principal</span>
         <span class="data-value">${getVal(lead.Duda_principal)}</span>
       </div>
-      <div class="data-item" style="margin-top:16px;">
+      <div class="data-item data-item-spaced-16">
         <span class="data-label">Explicación del Caso</span>
-        <p style="font-size:14px; line-height:1.6; margin-top:8px;">"${getVal(lead.Resumen_caso)}"</p>
+        <p class="case-summary-text">"${getVal(lead.Resumen_caso)}"</p>
       </div>
     </section>
 
@@ -456,24 +456,24 @@ async function openDrawer(lead) {
       
       <div class="ia-data-item">
         <span class="ia-data-label">Resumen IA</span>
-        <p class="ia-data-value" style="font-weight:400; line-height:1.5;">${getVal(lead.Resumen_IA)}</p>
+        <p class="ia-data-value ia-data-value-regular">${getVal(lead.Resumen_IA)}</p>
       </div>
       
-      <div class="data-grid" style="gap: 10px; margin-bottom: 14px;">
-        <div class="ia-data-item" style="margin-bottom:0;">
+      <div class="data-grid data-grid-compact">
+        <div class="ia-data-item ia-data-item-tight">
           <span class="ia-data-label">Motivo Clasificación</span>
           <span class="ia-data-value">${getVal(lead.Motivo_clasificacion)}</span>
         </div>
-        <div class="ia-data-item" style="margin-bottom:0;">
+        <div class="ia-data-item ia-data-item-tight">
           <span class="ia-data-label">Dato Faltante</span>
-          <span class="ia-data-value" style="color: #fca5a5;">${getVal(lead.Dato_faltante, "Ninguno")}</span>
+          <span class="ia-data-value ia-data-value-danger">${getVal(lead.Dato_faltante, "Ninguno")}</span>
         </div>
       </div>
       
       <!-- SUGGESTED RESPONSE -->
       <div class="suggested-response-container">
         <div class="suggested-response-header">
-          <span class="ia-data-label" style="margin-bottom: 0; color: #38bdf8;">Respuesta Sugerida (Borrador IA)</span>
+          <span class="ia-data-label ia-data-label-highlight">Respuesta Sugerida (Borrador IA)</span>
           <button class="btn-copy-premium" onclick="navigator.clipboard.writeText(\`${(lead.Respuesta_sugerida || '').replace(/`/g, '\\`')}\`)">
             📋 Copiar
           </button>
@@ -493,27 +493,27 @@ async function openDrawer(lead) {
       <h4 class="section-title">4. Gestión Comercial NC</h4>
       <div class="data-grid">
         <div class="data-item"><span class="data-label">Revisión Natalia</span><span class="data-value">${getVal(lead.Revision_Natalia, "Pendiente")}</span></div>
-        <div class="data-item"><span class="data-label">Semáforo Final</span><span class="data-value" style="font-weight:800;">${getVal(lead.Semaforo_final, "Igual que IA")}</span></div>
+        <div class="data-item"><span class="data-label">Semáforo Final</span><span class="data-value data-value-strong">${getVal(lead.Semaforo_final, "Igual que IA")}</span></div>
       </div>
       
       <div class="audit-ia-grid">
         <div class="audit-ia-item">
           <span class="ia-data-label">IA</span>
-          <span class="ia-data-value" style="font-size:11px;">${getVal(lead.Semaforo_IA)}</span>
+          <span class="ia-data-value ia-data-value-xs">${getVal(lead.Semaforo_IA)}</span>
         </div>
         <div class="audit-ia-item">
           <span class="ia-data-label">preIA</span>
-          <span class="ia-data-value" style="font-size:11px;">${getVal(lead.Semaforo_preIA, "N/A")}</span>
+          <span class="ia-data-value ia-data-value-xs">${getVal(lead.Semaforo_preIA, "N/A")}</span>
         </div>
       </div>
 
-      <div class="data-item" style="margin-top:16px;">
+      <div class="data-item data-item-spaced-16">
         <span class="data-label">Comentarios / Notas NC</span>
-        <textarea style="width:100%; height:80px; padding:12px; border-radius:8px; border:1px solid var(--border-color); font-size:13px; font-family:var(--font-sans);" placeholder="Natalia, añade tus notas aquí...">${lead.Comentario_revision || ""}</textarea>
+        <textarea class="nc-notes-textarea" placeholder="Natalia, añade tus notas aquí...">${lead.Comentario_revision || ""}</textarea>
       </div>
-      <div class="data-item" style="margin-top:12px;">
+      <div class="data-item data-item-spaced-12">
         <span class="data-label">Notas registradas</span>
-        <div style="max-height:150px; overflow-y:auto; padding-right:8px;">${(lead.lead_notes || []).length ? (lead.lead_notes || []).map(n => `<p style="margin:8px 0; font-size:13px; border-bottom:1px solid #f1f5f9; padding-bottom:4px;">- ${n.note}</p>`).join('') : '<span class="text-muted">Sin notas registradas.</span>'}</div>
+        <div class="notes-list-scroll">${(lead.lead_notes || []).length ? (lead.lead_notes || []).map(n => `<p class="note-entry">- ${n.note}</p>`).join('') : '<span class="text-muted">Sin notas registradas.</span>'}</div>
       </div>
     </section>
 
