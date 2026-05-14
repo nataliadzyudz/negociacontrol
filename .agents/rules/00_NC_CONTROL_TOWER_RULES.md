@@ -1,51 +1,43 @@
 # 00_NC_CONTROL_TOWER_RULES.md
 
-Regla para `.agents/rules`:
+## Regla puente de compatibilidad
 
-```text
-Lee primero /AGENTS.md.
-AGENTS.md manda.
-No uses esta carpeta como fuente paralela de reglas.
-```
+Este archivo NO es la fuente principal de gobierno.
+Su funcion es solo de puente para herramientas que leen `.agents/rules`.
 
-Fase activa:
+## Fuentes oficiales de gobierno
 
-```text
-FASE_ACTIVA = 2C
-```
+Usar como fuente oficial, en este orden de prioridad:
 
-Modo:
+1. TASK_SPEC activa
+2. `ANTIGRAVITY_RULES_NC.md` (cuando se trabaje con Antigravity)
+3. `AGENTS.md`
+4. `PROJECT_STATE.md`
+5. Este archivo
 
-```text
-Spec-driven.
-Una tarea cada vez.
-Cada tarea define READ_SET, WRITE_SET y DO_NOT_TOUCH.
-MCP solo puede operar dentro de esos límites.
-```
+Si hay contradiccion, manda el orden anterior.
 
-Skills:
+## Fase activa
 
-```text
-No leer /skills por defecto.
-Solo usar skills si la TASK_SPEC activa los incluye expresamente en READ_SET.
-Si un agente cree que necesita un skill, debe proponer SKILL_SUGGESTION.
-```
+- Este archivo NO decide la fase activa.
+- La fase activa se lee siempre desde `PROJECT_STATE.md` y la TASK_SPEC activa.
+- Estado conocido actual (referencial): `3_V0`.
+- Si `PROJECT_STATE.md` cambia, manda `PROJECT_STATE.md`.
 
-Bloqueos:
+## Lectura minima para Antigravity
 
-```text
-No leer /_archivo_DO_NOT_READ.
-No leer /n8n_workflows en Fase 2A salvo TASK_SPEC explícita.
-No tocar Google Sheets.
-No enviar mensajes automáticos.
-No exponer secretos.
-```
+Antes de ejecutar tareas con Antigravity, leer primero:
 
-Regla de verificación obligatoria:
+1. `ANTIGRAVITY_RULES_NC.md`
+2. TASK_SPEC activa
+3. `PROJECT_STATE.md`
 
-```text
-Antes de decir "no existe", siempre verificar:
-- /public/ (frontend puede existir)
-- /index.html (entrada web)
-- Docs futuros (02/03/04) para contexto
-```
+## DO_NOT_TOUCH estricto
+
+- No backend.
+- No n8n.
+- No Supabase.
+- No produccion.
+- No secrets ni `.env`.
+- No commit/push/deploy.
+- No autoaprobacion.
