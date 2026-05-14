@@ -314,7 +314,41 @@ router.post('/intake/diagnostico', async (req, res) => {
       throw leadError;
     }
 
-    const estadoInicial = normalizeEstadoOperativoDiagnostico(data);
+    const triageData = shouldPersistDiagnosticoTriage(data)
+      ? buildDiagnosticoTriageData(lead.id, data)
+      : null;
+
+    const estadoSource = {
+      ...data,
+      semaforo_final: pickFirst(data.semaforo_final, data.Semaforo_final, triageData?.semaforo_final),
+      Semaforo_final: pickFirst(data.Semaforo_final, data.semaforo_final, triageData?.semaforo_final),
+      semaforo_ia: pickFirst(data.semaforo_ia, data.Semaforo_IA, triageData?.semaforo_ia),
+      Semaforo_IA: pickFirst(data.Semaforo_IA, data.semaforo_ia, triageData?.semaforo_ia),
+      semaforo_preia: pickFirst(data.semaforo_preia, data.Semaforo_preIA, triageData?.semaforo_preia),
+      Semaforo_preIA: pickFirst(data.Semaforo_preIA, data.semaforo_preia, triageData?.semaforo_preia),
+      requiere_revision_manual: pickFirst(
+        data.requiere_revision_manual,
+        data.Requiere_revision_manual,
+        data.requiere_revision,
+        data.Requiere_revision,
+        triageData?.requiere_revision_manual
+      ),
+      Requiere_revision_manual: pickFirst(
+        data.Requiere_revision_manual,
+        data.requiere_revision_manual,
+        data.Requiere_revision,
+        data.requiere_revision,
+        triageData?.requiere_revision_manual
+      ),
+      riesgo_duro_detectado: pickFirst(data.riesgo_duro_detectado, data.Riesgo_duro_detectado, triageData?.riesgo_duro_detectado),
+      Riesgo_duro_detectado: pickFirst(data.Riesgo_duro_detectado, data.riesgo_duro_detectado, triageData?.riesgo_duro_detectado),
+      error_ia: pickFirst(data.error_ia, data.Error_IA),
+      Error_IA: pickFirst(data.Error_IA, data.error_ia),
+      ia_json_valido: pickFirst(data.ia_json_valido, data.IA_JSON_valido),
+      IA_JSON_valido: pickFirst(data.IA_JSON_valido, data.ia_json_valido)
+    };
+
+    const estadoInicial = normalizeEstadoOperativoDiagnostico(estadoSource);
     const { error: statusInsertError } = await supabase.from('lead_status_history').insert([{
       lead_id: lead.id,
       estado_anterior: null,
@@ -324,8 +358,7 @@ router.post('/intake/diagnostico', async (req, res) => {
     }]);
     if (statusInsertError) throw statusInsertError;
 
-    if (shouldPersistDiagnosticoTriage(data)) {
-      const triageData = buildDiagnosticoTriageData(lead.id, data);
+    if (triageData) {
       const { error: triageInsertError } = await supabase.from('lead_triage').insert([triageData]);
       if (triageInsertError) throw triageInsertError;
     }
