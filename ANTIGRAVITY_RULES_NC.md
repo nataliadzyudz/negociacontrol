@@ -86,3 +86,42 @@ Todo cierre debe incluir:
 - No ejecutar cambios fuera de la TASK_SPEC.
 - No abrir frentes nuevos (backend/n8n/supabase) durante UI V0.1.
 - Si aparece conflicto de contrato o alcance, cerrar en `PENDIENTE` y escalar.
+
+## 11) Regla anti-autoaprobacion
+
+Antigravity no puede declararse a si mismo:
+
+- `COMPLETADO`
+- `APROBADO`
+- `PASS` final
+- `READY_FOR_COMMIT`
+- `READY_FOR_PUSH`
+- `READY_FOR_DEPLOY`
+
+cuando Antigravity fue el implementador del cambio.
+
+Antigravity solo puede declarar estados intermedios:
+
+- `IMPLEMENTADO_PENDIENTE_QA`
+- `PENDIENTE_QA`
+- `PENDIENTE_APROBACION`
+
+La aprobacion final corresponde a Natalia / ChatGPT supervisor / OpenCode QA.
+
+Antigravity no puede modificar sin autorizacion explicita:
+
+- `TASK_SPEC`
+- reglas de gobierno
+- documentacion de canon
+- estado de hito
+- commit
+- push
+- deploy
+
+Si Antigravity necesita tocar algo fuera del `WRITE_SET`, debe detenerse y devolver:
+
+- `PENDIENTE`
+- motivo
+- archivo requerido
+- riesgo
+- propuesta

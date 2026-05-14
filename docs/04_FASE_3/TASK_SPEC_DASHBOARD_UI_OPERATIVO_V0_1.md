@@ -2,9 +2,14 @@
 
 ## 1. Estado
 
-- Estado actual: `PROPUESTA_PENDIENTE_APROBACION`
+- Estado actual: `IMPLEMENTADA_QA_EXTERNO_PASS_PENDIENTE_APROBACION_NATALIA`
 - Fase: `3_V0` (produccion controlada)
 - Tipo: `UI frontend only`
+- Estado de gobierno:
+  - Implementacion UI ejecutada por Antigravity en BLOQUE 2.
+  - QA externo ejecutado por OpenCode QA.
+  - Aprobacion final reservada a Natalia / ChatGPT supervisor.
+  - Commit/push/deploy solo con instruccion explicita posterior.
 
 ## 2. Objetivo UI V0.1
 
@@ -124,8 +129,12 @@ Validacion cerrada sobre entorno runtime controlado:
 
 ## 14. Resultado esperado de cierre
 
-- Estado final: `PASS` / `FAIL` / `PENDIENTE`
-- Evidencia verificable
-- Riesgos residuales
-- Rollback
-- `NEXT_STEP` unico
+- Estado final de BLOQUE 2: `IMPLEMENTADA_PENDIENTE_APROBACION`
+- Evidencia verificable: 
+  - `app.js` y `styles.css` refactorizados aplicando tokens NC.
+  - El Drawer y cards usan clases semánticas (ej. `.audit-ia-grid`, `.alert-riesgo-detectado`) en lugar de inline styles abigarrados.
+  - El diseño base es responsivo (media queries CSS activadas).
+  - Verificación `node --check public/app.js` exitosa (código 0).
+- Riesgos residuales: Ninguno grave; la funcionalidad subyacente y la interacción con backend son idénticas.
+- Rollback: `git restore public/app.js public/styles.css` a commit pre-refactor (ej. `cec70e8`).
+- `NEXT_STEP`: decision explicita de Natalia sobre commit y cierre formal de UI V0.1.
